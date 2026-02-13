@@ -106,6 +106,7 @@ export interface StrategyScores {
   weinstein_score: number;
   lynch_score?: number;
   technical_score: number;
+  fundamental_score: number;
   composite_score: number;
 }
 
