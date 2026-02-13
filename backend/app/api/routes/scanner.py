@@ -4,7 +4,7 @@ from fastapi import APIRouter, Query, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 
-from app.services.scanner import ScannerService, ScanFilter, ScanResult
+from app.services.scanner import ScannerService, ScanFilter, ScanResult, ScanProgress
 from app.utils.constants import INDEX_CONSTITUENTS
 
 router = APIRouter()
@@ -104,6 +104,20 @@ async def scan_vcp(
     results = await scanner.scan_minervini_setups(universe=universe)
     return results
 
+
+@router.get("/progress/{scan_id}", response_model=ScanProgress)
+async def get_scan_progress(scan_id: str):
+    """Get the progress of a scan operation.
+
+    Returns the current status and progress of a scan identified by its ID.
+    If the scan ID is not found, returns a 404 error.
+    """
+    progress = scanner.get_scan_progress(scan_id)
+
+    if progress is None:
+        raise HTTPException(status_code=404, detail=f"Scan ID '{scan_id}' not found")
+
+    return progress
 
 
 @router.get("/universes")

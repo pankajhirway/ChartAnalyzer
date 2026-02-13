@@ -1,7 +1,8 @@
 """Market scanner service."""
 
 import asyncio
-from dataclasses import dataclass
+import uuid
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
 
@@ -42,6 +43,19 @@ class ScanResult:
     timestamp: datetime
 
 
+@dataclass
+class ScanProgress:
+    """Progress tracking for a scan operation."""
+    scan_id: str
+    status: str  # pending, in_progress, completed, failed
+    current: int = 0
+    total: int = 0
+    results_found: int = 0
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    error: Optional[str] = None
+
+
 class ScannerService:
     """Service for scanning the market for trade opportunities."""
 
@@ -49,12 +63,25 @@ class ScannerService:
         """Initialize scanner service."""
         self.data_provider = YFinanceProvider()
         self.analyzer = AnalyzerService()
+        self._scan_progress: dict[str, ScanProgress] = {}
+
+    def get_scan_progress(self, scan_id: str) -> Optional[ScanProgress]:
+        """Get progress of a scan by its ID.
+
+        Args:
+            scan_id: Unique identifier for the scan
+
+        Returns:
+            ScanProgress object if found, None otherwise
+        """
+        return self._scan_progress.get(scan_id)
 
     async def scan_universe(
         self,
         universe: str = "nifty50",
         scan_filter: Optional[ScanFilter] = None,
         max_results: int = 20,
+        scan_id: Optional[str] = None,
     ) -> list[ScanResult]:
         """Scan a universe of stocks for opportunities.
 
@@ -62,6 +89,7 @@ class ScannerService:
             universe: Universe to scan (nifty50, nifty200, etc.)
             scan_filter: Filter criteria
             max_results: Maximum number of results to return
+            scan_id: Optional scan ID for progress tracking
 
         Returns:
             List of ScanResult objects
@@ -69,20 +97,40 @@ class ScannerService:
         if scan_filter is None:
             scan_filter = ScanFilter()
 
+        # Generate scan ID if not provided
+        if scan_id is None:
+            scan_id = str(uuid.uuid4())
+
         # Get symbols for the universe - use function for reliability
         symbols = get_index_constituents(universe)
         if not symbols:
             symbols = get_index_constituents("nifty50")
             logger.warning(f"Universe '{universe}' not found, falling back to nifty50")
 
+        # Initialize progress tracking
+        progress = ScanProgress(
+            scan_id=scan_id,
+            status="in_progress",
+            total=len(symbols),
+            started_at=datetime.now(),
+        )
+        self._scan_progress[scan_id] = progress
+
         logger.info(
             "Starting market scan",
+            scan_id=scan_id,
             universe=universe,
             symbols_count=len(symbols),
         )
 
         # Run analysis on all symbols (with concurrency limit)
-        results = await self._analyze_symbols(symbols, scan_filter)
+        results = await self._analyze_symbols(symbols, scan_filter, scan_id)
+
+        # Update progress as completed
+        progress.status = "completed"
+        progress.current = len(symbols)
+        progress.results_found = len(results)
+        progress.completed_at = datetime.now()
 
         # Sort by composite score
         results.sort(key=lambda x: x.composite_score, reverse=True)
@@ -94,12 +142,16 @@ class ScannerService:
         self,
         symbols: list[str],
         scan_filter: ScanFilter,
+        scan_id: str,
     ) -> list[ScanResult]:
         """Analyze multiple symbols with concurrency control."""
         semaphore = asyncio.Semaphore(5)  # Limit concurrent requests
         results = []
+        progress = self._scan_progress.get(scan_id)
+        processed_count = 0
 
         async def analyze_one(symbol: str):
+            nonlocal processed_count
             async with semaphore:
                 try:
                     analysis = await self.analyzer.analyze(symbol)
@@ -109,6 +161,11 @@ class ScannerService:
                             return result
                 except Exception as e:
                     logger.warning("Analysis failed", symbol=symbol, error=str(e))
+                finally:
+                    # Update progress
+                    processed_count += 1
+                    if progress:
+                        progress.current = processed_count
                 return None
 
         # Run all analyses concurrently
