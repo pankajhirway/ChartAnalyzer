@@ -198,6 +198,7 @@ export interface ScanFilter {
   max_composite_score?: number;
   signal?: SignalType;
   min_conviction?: ConvictionLevel;
+  min_volume_ratio?: number;
   trend?: TrendType;
   weinstein_stage?: number;
   max_results?: number;

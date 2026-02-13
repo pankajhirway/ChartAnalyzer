@@ -5,7 +5,7 @@ import { LoadingSpinner } from '../common/LoadingSpinner';
 import { PresetsPanel, type PresetOption } from './PresetsPanel';
 import { ScannerResults } from './ScannerResults';
 import { useAppStore, type ScanHistoryEntry } from '../../store';
-import type { ScanResult, ScanProgress } from '../../types';
+import type { ScanResult, ScanProgress, ScannerPreset } from '../../types';
 
 const UNIVERSES = [
   { id: 'nifty50', name: 'Nifty 50' },
@@ -34,6 +34,7 @@ export function Scanner() {
   const [isScanning, setIsScanning] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [presets, setPresets] = useState<PresetOption[]>([]);
+  const [presetsData, setPresetsData] = useState<Record<string, ScannerPreset>>({});
   const [isLoadingPresets, setIsLoadingPresets] = useState(true);
   const [scanProgress, setScanProgress] = useState<ScanProgress | null>(null);
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -58,6 +59,8 @@ export function Scanner() {
     const fetchPresets = async () => {
       try {
         const data = await scannerApi.getPresets();
+        // Store full presets data for filter access
+        setPresetsData(data);
         // Transform API presets to PresetOption format with icons
         const transformedPresets: PresetOption[] = Object.entries(data).map(([id, preset]: [string, any]) => ({
           id,
@@ -150,6 +153,20 @@ export function Scanner() {
           break;
         case 'vcp_setups':
           ({ results } = await scannerApi.scanVcp(selectedUniverse, scanId));
+          break;
+        case 'high_composite_score':
+        case 'volume_breakouts':
+          // Use preset's filter criteria from API
+          const presetFilter = presetsData[selectedPreset]?.filter;
+          ({ results } = await scannerApi.runScan({
+            universe: selectedUniverse,
+            min_composite_score: presetFilter?.min_composite_score || 60,
+            signal: presetFilter?.signal,
+            min_conviction: presetFilter?.min_conviction,
+            min_volume_ratio: presetFilter?.min_volume_ratio,
+            trend: presetFilter?.trend,
+            weinstein_stage: presetFilter?.weinstein_stage,
+          }, scanId));
           break;
         default:
           ({ results } = await scannerApi.runScan({

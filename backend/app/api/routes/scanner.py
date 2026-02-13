@@ -18,6 +18,7 @@ class ScanRequest(BaseModel):
     max_composite_score: float = 100.0
     signal: Optional[str] = None
     min_conviction: Optional[str] = None
+    min_volume_ratio: Optional[float] = None
     trend: Optional[str] = None
     weinstein_stage: Optional[int] = None
     max_results: int = 20
@@ -35,6 +36,7 @@ async def run_scan(request: ScanRequest, response: Response, scan_id: Optional[s
         max_composite_score=request.max_composite_score,
         signal=request.signal,
         min_conviction=request.min_conviction,
+        min_volume_ratio=request.min_volume_ratio,
         trend=request.trend,
         weinstein_stage=request.weinstein_stage,
     )

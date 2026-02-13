@@ -230,6 +230,11 @@ class ScannerService:
         if f.weinstein_stage and result.weinstein_stage != f.weinstein_stage:
             return False
 
+        if f.min_volume_ratio and result.avg_volume > 0:
+            volume_ratio = result.volume / result.avg_volume
+            if volume_ratio < f.min_volume_ratio:
+                return False
+
         return True
 
     async def scan_for_breakouts(
