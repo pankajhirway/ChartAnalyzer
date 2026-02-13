@@ -10,6 +10,7 @@ import structlog
 
 from app.core.data_provider import DataProvider
 from app.models.stock import Stock, PriceData, StockQuote, StockSearchResult, Exchange
+from app.models.fundamental import FundamentalData
 
 logger = structlog.get_logger()
 
@@ -288,3 +289,46 @@ class YFinanceProvider(DataProvider):
         from app.utils.constants import INDEX_CONSTITUENTS
 
         return INDEX_CONSTITUENTS.get(index, INDEX_CONSTITUENTS["nifty50"])
+
+    async def get_fundamentals(self, symbol: str) -> Optional[FundamentalData]:
+        """Get fundamental metrics for a stock.
+
+        Args:
+            symbol: Stock symbol
+
+        Returns:
+            FundamentalData object or None if not found
+        """
+        formatted_symbol = self._format_symbol(symbol)
+        cache_key = f"fundamentals_{formatted_symbol}"
+
+        cached = self._get_cached(cache_key)
+        if cached:
+            return cached
+
+        try:
+            ticker = yf.Ticker(formatted_symbol)
+            info = ticker.info
+
+            if not info:
+                return None
+
+            # Fetch fundamental metrics from ticker.info
+            fundamental_data = FundamentalData(
+                symbol=symbol.upper().replace(".NS", "").replace(".BO", ""),
+                pe_ratio=info.get("trailingPE") or info.get("forwardPE"),
+                pb_ratio=info.get("priceToBook"),
+                roe=info.get("returnOnEquity"),
+                roce=info.get("returnOnAssets"),  # Using ROA as proxy if ROCE not available
+                debt_to_equity=info.get("debtToEquity"),
+                eps_growth=info.get("earningsQuarterlyGrowth") or info.get("earningsGrowth"),
+                revenue_growth=info.get("revenueGrowth"),
+                updated_at=datetime.now(),
+            )
+
+            self._set_cache(cache_key, fundamental_data)
+            return fundamental_data
+
+        except Exception as e:
+            logger.error("Failed to get fundamental data", symbol=symbol, error=str(e))
+            return None

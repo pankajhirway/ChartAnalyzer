@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Optional
 
 from app.models.stock import Stock, PriceData, StockQuote, StockSearchResult
+from app.models.fundamental import FundamentalData
 
 
 class DataProvider(ABC):
@@ -94,3 +95,15 @@ class DataProvider(ABC):
         for suffix in [".NS", ".BO", "-EQ", "-BE"]:
             symbol = symbol.replace(suffix, "")
         return f"{symbol}.NS"
+
+    @abstractmethod
+    async def get_fundamentals(self, symbol: str) -> Optional[FundamentalData]:
+        """Get fundamental metrics for a stock.
+
+        Args:
+            symbol: Stock symbol
+
+        Returns:
+            FundamentalData object or None if not found
+        """
+        pass

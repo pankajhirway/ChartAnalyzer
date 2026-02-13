@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 from app.core.yfinance_provider import YFinanceProvider
 from app.models.stock import Stock, StockQuote, StockSearchResult, PriceDataResponse
+from app.models.fundamental import FundamentalData
 
 router = APIRouter()
 data_provider = YFinanceProvider()
@@ -74,3 +75,12 @@ async def get_batch_quotes(symbols: list[str]):
 
     quotes = await data_provider.get_multiple_quotes(symbols)
     return quotes
+
+
+@router.get("/{symbol}/fundamentals", response_model=FundamentalData)
+async def get_stock_fundamentals(symbol: str):
+    """Get fundamental metrics for a stock."""
+    fundamentals = await data_provider.get_fundamentals(symbol)
+    if not fundamentals:
+        raise HTTPException(status_code=404, detail="Fundamental data not available")
+    return fundamentals
