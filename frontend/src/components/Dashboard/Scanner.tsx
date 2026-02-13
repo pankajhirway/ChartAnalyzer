@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Play, ScanLine, History, Clock, Trash2, ChevronDown, Zap, TrendingUp, Activity, Target } from 'lucide-react';
 import { scannerApi } from '../../services/api';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { PresetsPanel, type PresetOption } from './PresetsPanel';
 import { ScannerResults } from './ScannerResults';
 import { useAppStore, type ScanHistoryEntry } from '../../store';
-import type { ScanResult } from '../../types';
+import type { ScanResult, ScanProgress } from '../../types';
 
 const UNIVERSES = [
   { id: 'nifty50', name: 'Nifty 50' },
@@ -35,6 +35,8 @@ export function Scanner() {
   const [showHistory, setShowHistory] = useState(false);
   const [presets, setPresets] = useState<PresetOption[]>([]);
   const [isLoadingPresets, setIsLoadingPresets] = useState(true);
+  const [scanProgress, setScanProgress] = useState<ScanProgress | null>(null);
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Get store actions and state
   const {
@@ -90,9 +92,47 @@ export function Scanner() {
     }
   }, [selectedUniverse, selectedPreset]);
 
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, []);
+
+  // Poll scan progress
+  const startProgressPolling = (scanId: string) => {
+    setScanProgress(null);
+
+    pollingIntervalRef.current = setInterval(async () => {
+      try {
+        const progress = await scannerApi.getScanProgress(scanId);
+        setScanProgress(progress);
+
+        // Stop polling if scan is complete or failed
+        if (progress.status === 'completed' || progress.status === 'failed') {
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+        }
+      } catch {
+        // If polling fails, just continue - the scan request will complete
+      }
+    }, 500); // Poll every 500ms
+  };
+
   const handleScan = async () => {
     setIsScanning(true);
     setLastScanParams(selectedUniverse, selectedPreset);
+    setScanProgress(null);
+
+    // Generate scan ID for progress tracking
+    const scanId = `scan_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+    // Start progress polling
+    startProgressPolling(scanId);
 
     try {
       let results: ScanResult[];
@@ -101,20 +141,20 @@ export function Scanner() {
       switch (selectedPreset) {
         case 'bullish_breakouts':
         case 'minervini_breakouts':
-          results = await scannerApi.scanBreakouts(selectedUniverse);
+          ({ results } = await scannerApi.scanBreakouts(selectedUniverse, 1.5, scanId));
           break;
         case 'stage2_advancing':
         case 'stage2_stocks':
-          results = await scannerApi.scanStage2(selectedUniverse);
+          ({ results } = await scannerApi.scanStage2(selectedUniverse, scanId));
           break;
         case 'vcp_setups':
-          results = await scannerApi.scanVcp(selectedUniverse);
+          ({ results } = await scannerApi.scanVcp(selectedUniverse, scanId));
           break;
         default:
-          results = await scannerApi.runScan({
+          ({ results } = await scannerApi.runScan({
             universe: selectedUniverse,
             min_composite_score: 50,
-          });
+          }, scanId));
       }
 
       // Cache the results
@@ -128,9 +168,17 @@ export function Scanner() {
         results,
         resultCount: results.length,
       });
+
+      // Mark progress as complete
+      setScanProgress(prev => prev ? { ...prev, status: 'completed' as const, current: prev?.total || 0 } : null);
     } catch (error) {
-      console.error('Scan failed:', error);
+      setScanProgress(prev => prev ? { ...prev, status: 'failed' as const, error: 'Scan failed' } : null);
     } finally {
+      // Stop polling
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
       setIsScanning(false);
     }
   };
@@ -299,10 +347,35 @@ export function Scanner() {
       {/* Results */}
       {isScanning ? (
         <div className="card flex justify-center py-16">
-          <div className="text-center">
+          <div className="text-center w-full max-w-md">
             <LoadingSpinner size="lg" className="mx-auto mb-4" />
-            <p className="text-slate-400 text-sm">Scanning market...</p>
-            <p className="text-slate-600 text-xs mt-1">This may take a few seconds</p>
+            <p className="text-slate-400 text-sm mb-4">Scanning market...</p>
+
+            {/* Progress Bar */}
+            {scanProgress && (
+              <div className="px-4">
+                <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
+                  <span>Progress</span>
+                  <span>
+                    {scanProgress.current} of {scanProgress.total} stocks
+                    {scanProgress.results_found > 0 && ` • ${scanProgress.results_found} found`}
+                  </span>
+                </div>
+                <div className="w-full bg-slate-700/50 rounded-full h-2.5 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full transition-all duration-300 ease-out"
+                    style={{ width: `${scanProgress.total > 0 ? (scanProgress.current / scanProgress.total) * 100 : 0}%` }}
+                  />
+                </div>
+                {scanProgress.status === 'completed' && (
+                  <p className="text-slate-500 text-xs mt-2">Finalizing results...</p>
+                )}
+              </div>
+            )}
+
+            {!scanProgress && (
+              <p className="text-slate-600 text-xs">This may take a few seconds</p>
+            )}
           </div>
         </div>
       ) : scanResults && scanResults.length > 0 ? (

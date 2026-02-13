@@ -236,12 +236,14 @@ class ScannerService:
         self,
         universe: str = "nifty50",
         min_volume_ratio: float = 1.5,
+        scan_id: Optional[str] = None,
     ) -> list[ScanResult]:
         """Scan for stocks breaking out.
 
         Args:
             universe: Universe to scan
             min_volume_ratio: Minimum volume ratio for breakout confirmation
+            scan_id: Optional scan ID for progress tracking
 
         Returns:
             List of stocks with breakout patterns
@@ -252,16 +254,18 @@ class ScannerService:
             min_volume_ratio=min_volume_ratio,
         )
 
-        return await self.scan_universe(universe, breakout_filter)
+        return await self.scan_universe(universe, breakout_filter, scan_id=scan_id)
 
     async def scan_stage2_stocks(
         self,
         universe: str = "nifty200",
+        scan_id: Optional[str] = None,
     ) -> list[ScanResult]:
         """Scan for stocks in Weinstein Stage 2.
 
         Args:
             universe: Universe to scan
+            scan_id: Optional scan ID for progress tracking
 
         Returns:
             List of Stage 2 stocks
@@ -272,16 +276,18 @@ class ScannerService:
             trend="BULLISH",
         )
 
-        return await self.scan_universe(universe, stage2_filter)
+        return await self.scan_universe(universe, stage2_filter, scan_id=scan_id)
 
     async def scan_minervini_setups(
         self,
         universe: str = "nifty200",
+        scan_id: Optional[str] = None,
     ) -> list[ScanResult]:
         """Scan for Minervini-style VCP setups.
 
         Args:
             universe: Universe to scan
+            scan_id: Optional scan ID for progress tracking
 
         Returns:
             List of stocks with VCP setups
@@ -291,7 +297,7 @@ class ScannerService:
             signal="BUY",
         )
 
-        results = await self.scan_universe(universe, vcp_filter, max_results=30)
+        results = await self.scan_universe(universe, vcp_filter, max_results=30, scan_id=scan_id)
 
         # Further filter for VCP patterns
         vcp_results = []

@@ -213,3 +213,14 @@ export interface ScannerPreset {
   holding_period: HoldingPeriod;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
 }
+
+export interface ScanProgress {
+  scan_id: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'failed';
+  current: number;
+  total: number;
+  results_found: number;
+  started_at?: string;
+  completed_at?: string;
+  error?: string;
+}
