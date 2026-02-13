@@ -180,6 +180,8 @@ export interface ScanResult {
   trend: string;
   weinstein_stage: number;
   patterns: string[];
+  volume: number;
+  avg_volume?: number;
   timestamp: string;
 }
 
@@ -197,6 +199,7 @@ export interface ScanFilter {
   max_composite_score?: number;
   signal?: SignalType;
   min_conviction?: ConvictionLevel;
+  min_volume_ratio?: number;
   trend?: TrendType;
   weinstein_stage?: number;
   max_results?: number;
@@ -237,4 +240,26 @@ export interface FundamentalScore {
     roe_score: number;       // Profitability (max 25)
     debt_score: number;      // Financial Health (max 20)
   };
+}
+
+export interface ScannerPreset {
+  id: string;
+  name: string;
+  description: string;
+  strategy_rationale: string;
+  filter: ScanFilter;
+  recommended_universe: string;
+  holding_period: HoldingPeriod;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+}
+
+export interface ScanProgress {
+  scan_id: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'failed';
+  current: number;
+  total: number;
+  results_found: number;
+  started_at?: string;
+  completed_at?: string;
+  error?: string;
 }

@@ -1,10 +1,10 @@
 """Market scanner API routes."""
 
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query, HTTPException, Response
 from pydantic import BaseModel
 from typing import Optional
 
-from app.services.scanner import ScannerService, ScanFilter, ScanResult
+from app.services.scanner import ScannerService, ScanFilter, ScanResult, ScanProgress
 from app.utils.constants import INDEX_CONSTITUENTS
 
 router = APIRouter()
@@ -18,6 +18,7 @@ class ScanRequest(BaseModel):
     max_composite_score: float = 100.0
     signal: Optional[str] = None
     min_conviction: Optional[str] = None
+    min_volume_ratio: Optional[float] = None
     trend: Optional[str] = None
     weinstein_stage: Optional[int] = None
     max_results: int = 20
@@ -30,7 +31,7 @@ class ScanRequest(BaseModel):
 
 
 @router.post("/run", response_model=list[ScanResult])
-async def run_scan(request: ScanRequest):
+async def run_scan(request: ScanRequest, response: Response, scan_id: Optional[str] = Query(None, description="Optional scan ID for progress tracking")):
     """Run a market scan with custom filters.
 
     Scans the specified universe of stocks and returns those
@@ -41,6 +42,7 @@ async def run_scan(request: ScanRequest):
         max_composite_score=request.max_composite_score,
         signal=request.signal,
         min_conviction=request.min_conviction,
+        min_volume_ratio=request.min_volume_ratio,
         trend=request.trend,
         weinstein_stage=request.weinstein_stage,
         # Fundamental filters
@@ -55,21 +57,40 @@ async def run_scan(request: ScanRequest):
         universe=request.universe,
         scan_filter=scan_filter,
         max_results=request.max_results,
+        scan_id=scan_id,
     )
+
+    # Return scan_id in response header for progress tracking
+    progress = scanner.get_scan_progress(scan_id) if scan_id else None
+    if progress:
+        response.headers["X-Scan-Id"] = progress.scan_id
 
     return results
 
 
 @router.get("/presets")
 async def get_scan_presets():
-    """Get available preset scan configurations."""
+    """Get available preset scan configurations with full definitions.
+
+    Returns preset configurations including:
+    - id: Unique preset identifier
+    - name: Display name
+    - description: What the preset scans for
+    - strategy_rationale: Why this strategy works
+    - filter: Filter criteria for the scan
+    - recommended_universe: Recommended stock universe
+    - holding_period: Recommended holding period
+    - difficulty: Difficulty level (beginner/intermediate/advanced)
+    """
     return scanner.get_preset_filters()
 
 
 @router.get("/breakouts")
 async def scan_breakouts(
+    response: Response,
     universe: str = Query("nifty50", description="Universe to scan"),
     min_volume_ratio: float = Query(1.5, description="Minimum volume ratio"),
+    scan_id: Optional[str] = Query(None, description="Optional scan ID for progress tracking"),
 ):
     """Scan for breakout stocks.
 
@@ -78,33 +99,70 @@ async def scan_breakouts(
     results = await scanner.scan_for_breakouts(
         universe=universe,
         min_volume_ratio=min_volume_ratio,
+        scan_id=scan_id,
     )
+
+    # Return scan_id in response header for progress tracking
+    progress = scanner.get_scan_progress(scan_id) if scan_id else None
+    if progress:
+        response.headers["X-Scan-Id"] = progress.scan_id
+
     return results
 
 
 @router.get("/stage2")
 async def scan_stage2(
+    response: Response,
     universe: str = Query("nifty200", description="Universe to scan"),
+    scan_id: Optional[str] = Query(None, description="Optional scan ID for progress tracking"),
 ):
     """Scan for Weinstein Stage 2 stocks.
 
     Returns stocks that are in the advancing Stage 2 phase.
     """
-    results = await scanner.scan_stage2_stocks(universe=universe)
+    results = await scanner.scan_stage2_stocks(universe=universe, scan_id=scan_id)
+
+    # Return scan_id in response header for progress tracking
+    progress = scanner.get_scan_progress(scan_id) if scan_id else None
+    if progress:
+        response.headers["X-Scan-Id"] = progress.scan_id
+
     return results
 
 
 @router.get("/vcp-setups")
 async def scan_vcp(
+    response: Response,
     universe: str = Query("nifty200", description="Universe to scan"),
+    scan_id: Optional[str] = Query(None, description="Optional scan ID for progress tracking"),
 ):
     """Scan for Minervini VCP setups.
 
     Returns stocks showing Volatility Contraction Pattern formations.
     """
-    results = await scanner.scan_minervini_setups(universe=universe)
+    results = await scanner.scan_minervini_setups(universe=universe, scan_id=scan_id)
+
+    # Return scan_id in response header for progress tracking
+    progress = scanner.get_scan_progress(scan_id) if scan_id else None
+    if progress:
+        response.headers["X-Scan-Id"] = progress.scan_id
+
     return results
 
+
+@router.get("/progress/{scan_id}", response_model=ScanProgress)
+async def get_scan_progress(scan_id: str):
+    """Get the progress of a scan operation.
+
+    Returns the current status and progress of a scan identified by its ID.
+    If the scan ID is not found, returns a 404 error.
+    """
+    progress = scanner.get_scan_progress(scan_id)
+
+    if progress is None:
+        raise HTTPException(status_code=404, detail=f"Scan ID '{scan_id}' not found")
+
+    return progress
 
 
 @router.get("/universes")
