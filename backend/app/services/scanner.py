@@ -337,6 +337,28 @@ class ScannerService:
                 "holding_period": "SWING",
                 "difficulty": "beginner",
             },
+            "52w_high_vol": {
+                "id": "52w_high_vol",
+                "name": "52-Week High with Volume",
+                "description": "Stocks hitting or approaching 52-week highs with strong volume confirmation",
+                "strategy_rationale": (
+                    "Stocks making new 52-week highs with volume represent strong momentum plays. "
+                    "When a stock breaks to new highs, there's no overhead resistance, and increased "
+                    "volume confirms institutional participation. This combination often leads to "
+                    "continued upward movement as new buyers enter and short sellers are forced to "
+                    "cover. The strategy focuses on high-conviction setups where the composite score "
+                    "confirms technical strength alongside the price breakout."
+                ),
+                "filter": {
+                    "min_composite_score": 65.0,
+                    "signal": "BUY",
+                    "min_volume_ratio": 1.3,
+                    "min_conviction": "MEDIUM",
+                },
+                "recommended_universe": "nifty200",
+                "holding_period": "SWING",
+                "difficulty": "intermediate",
+            },
             "pullback_entries": {
                 "id": "pullback_entries",
                 "name": "Pullback Entries",
