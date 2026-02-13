@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { createChart, ColorType } from 'lightweight-charts';
 import { stockApi } from '../../services/api';
@@ -14,7 +14,12 @@ interface PriceChartProps {
   annotationsVisible?: boolean;
 }
 
-export function PriceChart({ symbol, timeframe = '1d', annotations = [], annotationsVisible = true }: PriceChartProps) {
+export interface PriceChartRef {
+  exportChart: () => void;
+}
+
+export const PriceChart = forwardRef<PriceChartRef, PriceChartProps>(
+  ({ symbol, timeframe = '1d', annotations = [], annotationsVisible = true }, ref) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<ReturnType<typeof createChart> | null>(null);
   const candlestickSeriesRef = useRef<ReturnType<typeof createChart>['addCandlestickSeries'] | null>(null);
@@ -31,6 +36,23 @@ export function PriceChart({ symbol, timeframe = '1d', annotations = [], annotat
 
   // Get stopDrawing from store for escape key handling
   const stopDrawing = useAnnotationStore((state) => state.stopDrawing);
+
+  // Expose export function via ref
+  useImperativeHandle(ref, () => ({
+    exportChart: () => {
+      if (!chartRef.current) return;
+
+      try {
+        const dataUrl = chartRef.current.takeScreenshot().toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = `${symbol}-chart-${new Date().toISOString().split('T')[0]}.png`;
+        link.href = dataUrl;
+        link.click();
+      } catch (e) {
+        console.error('Failed to export chart:', e);
+      }
+    },
+  }));
 
   const { data: history, error: queryError } = useQuery({
     queryKey: ['history', symbol, timeframe],
@@ -496,4 +518,6 @@ export function PriceChart({ symbol, timeframe = '1d', annotations = [], annotat
       />
     </div>
   );
-}
+});
+
+PriceChart.displayName = 'PriceChart';

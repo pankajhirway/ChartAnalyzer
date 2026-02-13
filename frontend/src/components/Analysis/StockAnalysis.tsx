@@ -2,14 +2,14 @@ import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Plus, RefreshCw, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { analysisApi, watchlistApi } from '../../services/api';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { AnalysisSummary } from './AnalysisSummary';
 import { ScoreCard } from './ScoreCard';
 import { SignalDisplay } from './SignalDisplay';
 import { TradeSuggestion } from './TradeSuggestion';
-import { PriceChart } from '../Chart/PriceChart';
+import { PriceChart, type PriceChartRef } from '../Chart/PriceChart';
 import { AnnotationTools } from '../Chart/AnnotationTools';
 import { AnnotationsPanel } from '../Chart/AnnotationsPanel';
 import { NotesSection } from '../Chart/NotesSection';
@@ -17,6 +17,7 @@ import { useAnnotationStore } from '../../store/annotationStore';
 
 export function StockAnalysis() {
   const { symbol } = useParams<{ symbol: string }>();
+  const chartRef = useRef<PriceChartRef>(null);
 
   const { data: analysis, isLoading, refetch, isFetching, error } = useQuery({
     queryKey: ['analysis', symbol],
@@ -182,10 +183,16 @@ export function StockAnalysis() {
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h3 className="card-header mb-0">Price Chart</h3>
-            {symbol && <AnnotationTools symbol={symbol} />}
+            {symbol && (
+              <AnnotationTools
+                symbol={symbol}
+                onExport={() => chartRef.current?.exportChart()}
+              />
+            )}
           </div>
           {symbol && (
             <PriceChart
+              ref={chartRef}
               symbol={symbol}
               annotations={annotations}
               annotationsVisible={annotationsVisible}

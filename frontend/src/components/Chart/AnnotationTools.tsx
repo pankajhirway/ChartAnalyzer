@@ -1,4 +1,4 @@
-import { MousePointer2, TrendingUp, Square, Type, Minus, ArrowRight, Activity, Layers, Trash2, Eye, EyeOff } from 'lucide-react';
+import { MousePointer2, TrendingUp, Square, Type, Minus, ArrowRight, Activity, Layers, Trash2, Eye, EyeOff, Download } from 'lucide-react';
 import { useAnnotationStore, type AnnotationTool } from '../../store/annotationStore';
 
 const TOOL_BUTTONS: { tool: AnnotationTool; icon: any; label: string }[] = [
@@ -14,9 +14,10 @@ const TOOL_BUTTONS: { tool: AnnotationTool; icon: any; label: string }[] = [
 
 interface AnnotationToolsProps {
   symbol: string;
+  onExport?: () => void;
 }
 
-export function AnnotationTools({ symbol }: AnnotationToolsProps) {
+export function AnnotationTools({ symbol, onExport }: AnnotationToolsProps) {
   const {
     drawing,
     startDrawing,
@@ -111,6 +112,20 @@ export function AnnotationTools({ symbol }: AnnotationToolsProps) {
       >
         <Trash2 className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
       </button>
+
+      {/* Separator */}
+      <div className="w-px h-6 bg-slate-700/50" />
+
+      {/* Export Button */}
+      {onExport && (
+        <button
+          onClick={onExport}
+          className="relative group p-2 rounded-lg text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition-all duration-200"
+          title="Export Chart as Image"
+        >
+          <Download className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+        </button>
+      )}
     </div>
   );
 }
