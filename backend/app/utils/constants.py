@@ -1,0 +1,241 @@
+"""Constants and stock lists for Indian markets."""
+
+# Nifty 50 Constituents
+NIFTY_50 = [
+    "ADANIENT", "ADANIPORTS", "APOLLOHOSP", "ASIANPAINT", "AXISBANK",
+    "BAJAJ-AUTO", "BAJFINANCE", "BAJAJFINSV", "BPCL", "BHARTIARTL",
+    "BRITANNIA", "CIPLA", "COALINDIA", "DIVISLAB", "DRREDDY",
+    "EICHERMOT", "GRASIM", "HCLTECH", "HDFCBANK", "HDFCLIFE",
+    "HEROMOTOCO", "HINDALCO", "HINDUNILVR", "ICICIBANK", "ITC",
+    "INDUSINDBK", "INFY", "JSWSTEEL", "KOTAKBANK", "LT",
+    "LTIM", "M&M", "MARUTI", "NESTLEIND", "NTPC",
+    "ONGC", "POWERGRID", "RELIANCE", "SBILIFE", "SBIN",
+    "SUNPHARMA", "TATACONSUM", "TATAMOTORS", "TATASTEEL", "TCS",
+    "TECHM", "TITAN", "ULTRACEMCO", "UPL", "WIPRO"
+]
+
+# Nifty Next 50 Constituents
+NIFTY_NEXT_50 = [
+    "ABB", "ACC", "ADANIENSOL", "ADANIGREEN", "ADANIPOWER",
+    "ATGL", "AMBUJACEM", "AWL", "BANKBARODA", "BEL",
+    "BERGEPAINT", "BOSCHLTD", "CANBK", "CHOLAFIN", "COLPAL",
+    "DABUR", "DLF", "DMART", "GAIL", "GODREJCP",
+    "HAL", "HAVELLS", "HDFCAMC", "HINDZINC", "ICICIGI",
+    "ICICIPRULI", "IOC", "IRCTC", "JINDALSTEL", "JIOFIN",
+    "LICI", "MARICO", "MCDOWELL-N", "MOTHERSON", "NAUKRI",
+    "PIDILITIND", "PIIND", "PNB", "POLYCAB", "SBICARD",
+    "SHREECEM", "SIEMENS", "SRF", "TATACHEM", "TATAPOWER",
+    "TORNTPHARM", "TRENT", "TVSMOTOR", "VEDL", "ZOMATO"
+]
+
+# Nifty Midcap Select (Representative list for Nifty 200)
+NIFTY_MIDCAP_SELECT = [
+    "AARTIIND", "ABBOTINDIA", "ABCAPITAL", "ABFRL", "AIAENG",
+    "AJANTPHARM", "ALKEM", "APLAPOLLO", "ASHOKLEY", "ASTRAL",
+    "ATUL", "AUBANK", "AUROPHARMA", "BALKRISIND", "BALRAMCHIN",
+    "BANDHANBNK", "BANKINDIA", "BATAINDIA", "BHARATFORG", "BHEL",
+    "BIOCON", "BSOFT", "CANFINHOME", "CGPOWER", "COFORGE",
+    "CONCOR", "COROMANDEL", "CROMPTON", "CUMMINSIND", "DALBHARAT",
+    "DEEPAKNTR", "DELHIVERY", "DIXON", "ESCORTS", "EXIDEIND",
+    "FEDERALBNK", "FLUOROCHEM", "FORTIS", "GMRINFRA", "GNFC",
+    "GODREJPROP", "GRANULES", "GUJGASLTD", "HAL", "HINDCOPPER",
+    "HINDPETRO", "IDFC", "IDFCFIRSTB", "IGL", "INDHOTEL",
+    "INDIANB", "INDIGOPNTS", "INDUSTOWER", "IPCALAB", "IRFC",
+    "ISEC", "JSL", "JSWENERGY", "JUBLFOOD", "KALYANKJIL",
+    "KPITTECH", "LALPATHLAB", "LAURUSLABS", "LICHSGFIN", "LODHA",
+    "LUPIN", "MAHABANK", "MANAPPURAM", "MAXFINSERV", "MAXHEALTH",
+    "METROPOLIS", "MFSL", "MGL", "MPHASIS", "MRF",
+    "MUTHOOTFIN", "NAM-INDIA", "NATIONALUM", "NAVINFLUOR", "NHPC",
+    "NMDC", "OBEROIRLTY", "OFSS", "OIL", "PAGEIND",
+    "PATANJALI", "PAYTM", "PERSISTENT", "PETRONET", "PFC",
+    "PHOENIXLTD", "POONAWALLA", "PRESTIGE", "PVRINOX", "RADICO",
+    "RAINBOW", "RAMCOCEM", "RBLBANK", "RECLTD", "RVNL",
+    "SAIL", "SCHAEFFLER", "SHRIRAMFIN", "SJVN", "SKFINDIA",
+    "SOLARINDS", "SONACOMS", "STARHEALTH", "SUMICHEM", "SUNDARMFIN",
+    "SUNTV", "SUPREMEIND", "SUZLON", "SYNGENE", "TATACOMM",
+    "TATAELXSI", "TATAINVEST", "TATATECH", "THERMAX", "TIINDIA",
+    "TORNTPOWER", "TRIDENT", "TUBEINVEST", "UBL", "UNIONBANK",
+    "VGUARD", "VOLTAS", "WHIRLPOOL", "YESBANK", "ZEEL"
+]
+
+# Additional Smallcap/Midcap for Nifty 500 coverage
+ADDITIONAL_NIFTY_500 = [
+    "360ONE", "3MINDIA", "ABB", "ACE", "ADANITRANS",
+    "AEGISCHEM", "AFFLE", "AHLUCONT", "AJMERA", "ALLCARGO",
+    "ALOKINDS", "AMARAJABAT", "AMBER", "ANURAS", "APARINDS",
+    "ARVIND", "ASAHIINDIA", "ASTERDM", "ASTRAZEN", "AVANTIFEED",
+    "BASF", "BCG", "BDL", "BEML", "BLS",
+    "BLUESTARCO", "BORORENEW", "BRIGADE", "CAMPUS", "CASTROLIND",
+    "CCL", "CEATLTD", "CENTRALBK", "CENTURYPLY", "CERA",
+    "CESC", "CHAMBLFERT", "CHEMPLASTS", "CHENNPETRO", "CHOLAHLDNG",
+    "CITYUNIONB", "CLEAN", "COCHINSHIP", "CREDITACC", "CRISIL",
+    "CSBBANK", "CYIENT", "DATAPATTNS", "DBL", "DCBBANK",
+    "DCMSHRIRAM", "DEEPAKFERT", "DEVYANI", "ECLERX", "EDELWEISS",
+    "EIDPARRY", "EIHOTEL", "ELGIEQUIP", "EMAMILTD", "ENDURANCE",
+    "ENGINEERSIN", "EPL", "EQUITASBNK", "ERIS", "FDC",
+    "FINEORG", "FINCABLES", "FINPIPE", "FSL", "GABRIEL",
+    "GARFIBRES", "GATEWAY", "GENUSPOWER", "GEPIL", "GESHIP",
+    "GILLETTE", "GLAXO", "GLENMARK", "GMMPFAUDLR", "GNDL",
+    "GPPL", "GRINDWELL", "GSFC", "GSPL", "GTPL",
+    "GUJALKALI", "HAPPSTMNDS", "HATHWAY", "HEG", "HEIDELBERG",
+    "HFCL", "HGS", "HIKAL", "HIL", "HIMATSEIDE",
+    "HINDGLASS", "HINDWAREAP", "HLEGLAS", "HOMEFIRST", "HONAUT",
+    "HUDCO", "IBULHSGFIN", "ICRA", "IDBI", "IFCI",
+    "IIFL", "IMAGICAA", "INDCOIN", "INDIACEM", "INDIAGLYCO",
+    "INDIAMART", "INDIASHLTR", "INDOCO", "IGARASHI", "INDORAMA",
+    "INDOSTAR", "INDRA", "INDSWFTLAB", "INFIBEAM", "INGERRAND",
+    "INOXGREEN", "INOXWIND", "INTELLECT", "IONEXCHANG", "IPCL",
+    "IRB", "IRCON", "ITI", "J&KBANK", "JAGRAN",
+    "JAICORPLTD", "JAMNAAUTO", "JETAIRWAYS", "JINDALPOLY", "JINDALSAW",
+    "JINDWORLD", "JKLAKSHMI", "JKPAPER", "JKTYRE", "JMFINANCIL",
+    "JPPOWER", "JSLHISAR", "JTEKTINDIA", "JYOTHYLAB", "KAJARIACER",
+    "KALPATPOWR", "KAMATHOTEL", "KANSAINER", "KARURVYSYA", "KEC",
+    "KEI", "KIOCL", "KIRIINDUS", "KIRLOSENG", "KNRCON",
+    "KOLTEPATIL", "KOPRAN", "KRBL", "KRSNAA", "KSB",
+    "KSCL", "KSL", "KTKBANK", "L&TFH", "LAOPALA",
+    "LATENTVIEW", "LAXMISMACH", "LEMONTREE", "LINDEINDIA", "LUXIND",
+    "LXCHEM", "MAHINDCIE", "MAHLIFE", "MAHLOG", "MAHSEAMLES",
+    "MAITHANALL", "MANGLMCEM", "MANINFRA", "MAPMYINDIA", "MASTEK",
+    "MAZDOCK", "MBAPL", "MEDPLUS", "METROBRAND", "MHRIL",
+    "MIDHANI", "MINDACORP", "MINDAIND", "MMTC", "MOIL",
+    "MOL", "MOREPENLAB", "MOTILALOFS", "MRPL", "MSTCLTD",
+    "MTARTECH", "MUKANDLTD", "MCX", "NBCC", "NCC",
+    "NEOGEN", "NESCO", "NETWORK18", "NEULANDLAB", "NEWGEN",
+    "NLCINDIA", "NOCIL", "NRBBEARING", "NSL", "NUCLEUS",
+    "NUVOCO", "OBEROI", "OLECTRA", "OMAXE", "ONMOBILE",
+    "OPTIEMUS", "ORIENTCEM", "ORIENTELEC", "ORISSAMINE", "PANACEABIO",
+    "PARADEEP", "PARAS", "PATELENG", "PCJEWELLER", "PEL",
+    "PENIND", "PFS", "PGHH", "PGHL", "PHILLIPS",
+    "PILANIINVS", "POLYPLEX", "PRAJIND", "PRECWIRE", "PRINCEPIPE",
+    "PRISMJOHN", "PRIVISCL", "PSB", "PSPPROJECT", "PTC",
+    "PURVA", "QUESS", "QUICKHEAL", "RADICO", "RAILTEL",
+    "RAIN", "RAJESHEXPO", "RALLIS", "RANEHOLDIN", "RATNAMANI",
+    "RAYMOND", "RBA", "RCF", "REFEX", "RELAXO",
+    "RELIGARE", "REPRO", "RESPONIND", "RITES", "RKFORGE",
+    "ROLEXRINGS", "ROSSARI", "ROUTE", "RSYSTEMS", "RTNINDIA",
+    "RTNPOWER", "RUBYMILLS", "RUCHI", "RUPA", "RVNL",
+    "SAFARI", "SAGCEM", "SANGHIIND", "SANOFI", "SAPPHIRE",
+    "SAREGAMA", "SBCL", "SCHNEIDER", "SCI", "SEQUENT",
+    "SFL", "SHARDACROP", "SHILPAMED", "SHK", "SHOPERSTOP",
+    "SHYAMMETL", "SIEMENS", "SIS", "SJS", "SKIPPER",
+    "SMCGLOBAL", "SOBHA", "SOLARA", "SOMANYCERA", "SONATSOFTW",
+    "SOUTHBANK", "SPANDANA", "SPARC", "SPLPETRO", "STAR",
+    "STARCEMENT", "STCINDIA", "STEELXIND", "STLTECH", "SUBEXLTD",
+    "SUBROS", "SUDARSCHEM", "SUMMITSEC", "SUNDARMHLD", "SUNDRMFAST",
+    "SUNFLAG", "SUNTECK", "SUPRAJIT", "SURYAROSNI", "SURYODAY",
+    "SUVENPHAR", "SUZLON", "SWANENERGY", "SWARAJENG", "SWELECTES",
+    "SWSOLAR", "SYMPHONY", "TANLA", "TATACOFFEE", "TATACOMM",
+    "TATAINVEST", "TATAMETALI", "TATASTEEL", "TBZ", "TCI",
+    "TCIEXP", "TCNSBRANDS", "TDPOWERSYS", "TEAMLEASE", "TECHNOE",
+    "TEJASNET", "TEXRAIL", "THANGAMAYL", "THEMISMED", "THOMASCOOK",
+    "THYROCARE", "TIIL", "TIMETECHNO", "TIMKEN", "TINPLATE",
+    "TITAGARH", "TMB", "TNPETRO", "TNPL", "TOKYOPLAST",
+    "TORNTPHARM", "TORNTPOWER", "TOTAL", "TOUCHWOOD", "TPLPLASTEH",
+    "TREEHOUSE", "TREJHARA", "TRENT", "TRF", "TRIDENT",
+    "TRIGYN", "TRIL", "TRITURBINE", "TRIVENI", "TTKPRESTIG",
+    "TTML", "TV18BRDCST", "TVSSRICHAK", "TVTODAY", "UCOBANK",
+    "UFLEX", "UJJIVAN", "UJJIVANSFB", "ULTRACEMCO", "UNICHEMLAB",
+    "UNIDT", "UNIENTER", "UNIONBANK", "UNIPARTS", "UNITEDTEA",
+    "UNIVCABLES", "UPL", "URJA", "USHAMART", "UTIAMC",
+    "UTTAMSUGAR", "VAIBHAVGBL", "VAKRANGEE", "VALIANTORG", "VARDHACRLC",
+    "VARDMNPOLY", "VARROC", "VASCONEQ", "VASWANI", "VBL",
+    "VEDL", "VENKEYS", "VESUVIUS", "VGUARD", "VHL",
+    "VIDHIING", "VIJAYA", "VINATIORGA", "VINDHYATEL", "VIPCLOTHNG",
+    "VIPIND", "VISAKAIND", "VISHNU", "VISESHINFO", "VISHWARAJ",
+    "VIVIDHA", "VIVIMEDLAB", "VLSFINANCE", "VMART", "VOLTAMP",
+    "VOLTAS", "VRLLOG", "VSTIND", "VSTTILLERS", "VTL",
+    "WABAG", "WALCHANNAG", "WANBURY", "WATERBASE", "WEALTH",
+    "WEBELSOLAR", "WEIZMANIND", "WELCORP", "WELENT", "WELINV",
+    "WELSPUNIND", "WENDT", "WESTLIFE", "WHEELS", "WHIRLPOOL",
+    "WILLAMAGOR", "WINDLAS", "WINDMACHIN", "WOCKPHARMA", "WONDERLA",
+    "WSTCSTPAPR", "XCHANGING", "XPROINDIA", "YAARI", "YESBANK",
+    "ZEEL", "ZEELEARN", "ZEEMEDIA", "ZENSARTECH", "ZENTEC",
+    "ZFCVINDIA", "ZODIAC", "ZOTA", "ZUARI", "ZUARIAGRO",
+    "ZYDUSLIFE", "ZYDUSWELL"
+]
+
+# Combined Indices - compute at module load time
+NIFTY_100 = list(set(NIFTY_50 + NIFTY_NEXT_50))
+NIFTY_200 = list(set(NIFTY_100 + NIFTY_MIDCAP_SELECT))
+NIFTY_500 = list(set(NIFTY_200 + ADDITIONAL_NIFTY_500))
+
+# F&O Stocks (Stocks available in Derivatives segment)
+FNO_STOCKS = list(set(NIFTY_200))  # Approximation: most FnO stocks are in Nifty200
+
+
+def get_index_constituents(index_name: str) -> list[str]:
+    """Get the list of constituents for an index.
+
+    This function ensures lists are computed correctly at access time.
+    """
+    # Re-compute combined indices to ensure they're correct
+    nifty_100 = NIFTY_100 if NIFTY_100 else list(set(NIFTY_50 + NIFTY_NEXT_50))
+    nifty_200 = NIFTY_200 if NIFTY_200 else list(set(nifty_100 + NIFTY_MIDCAP_SELECT))
+    nifty_500 = NIFTY_500 if NIFTY_500 else list(set(nifty_200 + ADDITIONAL_NIFTY_500))
+    fno = FNO_STOCKS if FNO_STOCKS else list(set(nifty_200))
+
+    indices = {
+        "nifty50": NIFTY_50,
+        "nifty100": nifty_100,
+        "nifty200": nifty_200,
+        "nifty500": nifty_500,
+        "fnO": fno,
+    }
+    return indices.get(index_name, NIFTY_50)
+
+
+# Constants for scanning - built from the function
+INDEX_CONSTITUENTS = {
+    "nifty50": NIFTY_50,
+    "nifty100": NIFTY_100,
+    "nifty200": NIFTY_200,
+    "nifty500": NIFTY_500,
+    "fnO": FNO_STOCKS,
+}
+
+# Sector mapping
+SECTORS = {
+    "IT": ["TCS", "INFY", "WIPRO", "HCLTECH", "TECHM", "COFORGE", "PERSISTENT", "LTIM", "MPHASIS", "OFSS"],
+    "BANKING": ["HDFCBANK", "ICICIBANK", "SBIN", "KOTAKBANK", "AXISBANK", "INDUSINDBK", "BANDHANBNK", "AUBANK", "FEDERALBNK", "RBLBANK"],
+    "FMCG": ["HINDUNILVR", "ITC", "NESTLEIND", "BRITANNIA", "DABUR", "GODREJCP", "COLPAL", "MARICO", "EMAMILTD", "RADICO"],
+    "AUTO": ["MARUTI", "TATAMOTORS", "M&M", "EICHERMOT", "HEROMOTOCO", "BAJAJ-AUTO", "TVSMOTOR", "MOTHERSON", "BOSCHLTD", "AMARAJABAT"],
+    "PHARMA": ["SUNPHARMA", "DIVISLAB", "DRREDDY", "CIPLA", "LUPIN", "BIOCON", "ZDYUSLIFE", "TORNTPHARM", "ABBOTINDIA", "GLENMARK"],
+    "METALS": ["TATASTEEL", "JSWSTEEL", "HINDALCO", "ADANIENT", "COALINDIA", "VEDL", "JINDALSTEL", "SAIL", "HINDZINC", "NATIONALUM"],
+    "ENERGY": ["RELIANCE", "ONGC", "BPCL", "GAIL", "NTPC", "POWERGRID", "IOC", "PETRONET", "GUJGASLTD", "IGL"],
+    "FINANCE": ["BAJFINANCE", "BAJAJFINSV", "PFC", "RECLTD", "CHOLAFIN", "MUTHOOTFIN", "BAJAJHLDNG", "SHRIRAMFIN", "LICHSGFIN", "HDFC"],
+}
+
+# Pattern names and descriptions
+PATTERN_DESCRIPTIONS = {
+    "CUP_HANDLE": "Cup and Handle - Bullish continuation pattern",
+    "VCP": "Volatility Contraction Pattern - Minervini's signature setup",
+    "DOUBLE_TOP": "Double Top - Bearish reversal pattern",
+    "DOUBLE_BOTTOM": "Double Bottom - Bullish reversal pattern",
+    "HEAD_SHOULDERS": "Head and Shoulders - Bearish reversal pattern",
+    "HEAD_SHOULDERS_INVERSE": "Inverse Head and Shoulders - Bullish reversal pattern",
+    "ASCENDING_TRIANGLE": "Ascending Triangle - Bullish continuation pattern",
+    "DESCENDING_TRIANGLE": "Descending Triangle - Bearish continuation pattern",
+    "FLAG": "Flag - Continuation pattern",
+    "PENNANT": "Pennant - Continuation pattern",
+    "WEDGE_RISING": "Rising Wedge - Typically bearish pattern",
+    "WEDGE_FALLING": "Falling Wedge - Typically bullish pattern",
+    "BASE_BREAKOUT": "Base Breakout - Price breaking out of consolidation",
+    "HIGH_TIGHT_FLAG": "High Tight Flag - Strong bullish continuation",
+    "PULLBACK_MA": "Pullback to Moving Average - Entry on pullback",
+}
+
+# Weinstein Stage descriptions
+STAGE_DESCRIPTIONS = {
+    1: "Stage 1: Basing/Consolidation - Stock is building a base after decline",
+    2: "Stage 2: Advancing - Stock is in uptrend (BUY ZONE)",
+    3: "Stage 3: Topping/Distribution - Stock is topping after advance",
+    4: "Stage 4: Declining - Stock is in downtrend (AVOID/SHORT)",
+}
+
+# Signal strength thresholds
+SCORE_THRESHOLDS = {
+    "bullish": 70,
+    "neutral_low": 40,
+    "neutral_high": 70,
+    "bearish": 40,
+}
