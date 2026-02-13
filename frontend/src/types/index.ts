@@ -200,3 +200,14 @@ export interface ScanFilter {
   weinstein_stage?: number;
   max_results?: number;
 }
+
+export interface ScannerPreset {
+  id: string;
+  name: string;
+  description: string;
+  strategy_rationale: string;
+  filter: ScanFilter;
+  recommended_universe: string;
+  holding_period: HoldingPeriod;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+}

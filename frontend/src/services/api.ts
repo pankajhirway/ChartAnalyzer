@@ -8,6 +8,7 @@ import type {
   ScanResult,
   WatchlistItem,
   ScanFilter,
+  ScannerPreset,
 } from '../types';
 
 const api = axios.create({
@@ -100,6 +101,11 @@ export const scannerApi = {
   },
 
   getPresets: async () => {
+    const { data } = await api.get(`/scanner/presets`);
+    return data;
+  },
+
+  getEnhancedPresets: async (): Promise<Record<string, ScannerPreset>> => {
     const { data } = await api.get(`/scanner/presets`);
     return data;
   },
