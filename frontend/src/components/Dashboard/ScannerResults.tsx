@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { RefreshCw, ChevronUp, ChevronDown } from 'lucide-react';
+import { RefreshCw, Download, ChevronUp, ChevronDown } from 'lucide-react';
 import type { ScanResult, SignalType, ConvictionLevel } from '../../types';
 
 interface ScannerResultsProps {
@@ -69,6 +69,69 @@ export function ScannerResults({ results, onRefresh, isRefreshing = false }: Sca
     return vol.toString();
   };
 
+  const handleExportCSV = () => {
+    if (sortedResults.length === 0) return;
+
+    // Define CSV headers
+    const headers = [
+      'Symbol',
+      'Company Name',
+      'Current Price',
+      'Composite Score',
+      'Signal',
+      'Conviction',
+      'Trend',
+      'Weinstein Stage',
+      'Patterns',
+      'Volume',
+      'Avg Volume',
+      'Timestamp',
+    ];
+
+    // Convert results to CSV rows
+    const rows = sortedResults.map((result) => [
+      result.symbol,
+      result.company_name || '',
+      result.current_price.toFixed(2),
+      result.composite_score.toFixed(2),
+      result.signal,
+      result.conviction,
+      result.trend,
+      result.weinstein_stage.toString(),
+      result.patterns.join('; '),
+      result.volume.toString(),
+      result.avg_volume?.toString() || '',
+      result.timestamp,
+    ]);
+
+    // Create CSV content
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row) =>
+        row.map((cell) => {
+          // Escape quotes and wrap in quotes if contains comma or quote
+          const cellStr = String(cell);
+          if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+            return `"${cellStr.replace(/"/g, '""')}"`;
+          }
+          return cellStr;
+        }).join(',')
+      ),
+    ].join('\n');
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `scan_results_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="card animate-fade-in-up" style={{ animationDelay: '150ms' }}>
       <div className="flex items-center justify-between mb-4">
@@ -76,16 +139,26 @@ export function ScannerResults({ results, onRefresh, isRefreshing = false }: Sca
           Scan Results{' '}
           <span className="text-slate-500 font-normal">({results.length})</span>
         </h3>
-        {onRefresh && (
+        <div className="flex items-center space-x-1">
           <button
-            onClick={onRefresh}
-            disabled={isRefreshing}
+            onClick={handleExportCSV}
+            disabled={sortedResults.length === 0}
             className="p-2 hover:bg-slate-800/60 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Refresh scan"
+            title="Export to CSV"
           >
-            <RefreshCw className={`w-4 h-4 text-slate-500 hover:text-slate-300 transition-colors ${isRefreshing ? 'animate-spin' : ''}`} />
+            <Download className="w-4 h-4 text-slate-500 hover:text-slate-300 transition-colors" />
           </button>
-        )}
+          {onRefresh && (
+            <button
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              className="p-2 hover:bg-slate-800/60 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Refresh scan"
+            >
+              <RefreshCw className={`w-4 h-4 text-slate-500 hover:text-slate-300 transition-colors ${isRefreshing ? 'animate-spin' : ''}`} />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="overflow-x-auto -mx-5 px-5">
