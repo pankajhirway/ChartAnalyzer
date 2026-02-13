@@ -40,7 +40,9 @@ class ScanResult:
     trend: str
     weinstein_stage: int
     patterns: list[str]
-    timestamp: datetime
+    volume: int = 0
+    avg_volume: int = 0
+    timestamp: datetime = field(default_factory=datetime.now)
 
 
 @dataclass
@@ -156,7 +158,7 @@ class ScannerService:
                 try:
                     analysis = await self.analyzer.analyze(symbol)
                     if analysis:
-                        result = self._create_scan_result(analysis)
+                        result = await self._create_scan_result(analysis)
                         if self._passes_filter(result, scan_filter):
                             return result
                 except Exception as e:
@@ -177,9 +179,20 @@ class ScannerService:
 
         return results
 
-    def _create_scan_result(self, analysis: AnalysisResult) -> ScanResult:
+    async def _create_scan_result(self, analysis: AnalysisResult) -> ScanResult:
         """Create a scan result from analysis."""
         pattern_names = [p.pattern_name for p in analysis.detected_patterns[:3]]
+
+        # Try to get current quote for volume data
+        volume = 0
+        avg_volume = 0
+        try:
+            quote = await self.data_provider.get_quote(analysis.symbol)
+            if quote:
+                volume = quote.volume
+                avg_volume = quote.avg_volume or 0
+        except Exception:
+            pass  # Volume data is optional, continue without it
 
         return ScanResult(
             symbol=analysis.symbol,
@@ -191,6 +204,8 @@ class ScannerService:
             trend=analysis.primary_trend.value,
             weinstein_stage=analysis.weinstein_stage.value,
             patterns=pattern_names,
+            volume=volume,
+            avg_volume=avg_volume,
             timestamp=analysis.timestamp,
         )
 

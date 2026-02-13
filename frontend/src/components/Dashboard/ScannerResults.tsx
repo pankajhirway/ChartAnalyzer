@@ -8,7 +8,7 @@ interface ScannerResultsProps {
   isRefreshing?: boolean;
 }
 
-type SortField = 'symbol' | 'current_price' | 'composite_score' | 'signal' | 'weinstein_stage' | 'pattern_count';
+type SortField = 'symbol' | 'current_price' | 'composite_score' | 'volume' | 'signal' | 'weinstein_stage' | 'pattern_count';
 
 interface SortState {
   field: SortField;
@@ -36,6 +36,8 @@ export function ScannerResults({ results, onRefresh, isRefreshing = false }: Sca
         return multiplier * (a.current_price - b.current_price);
       case 'composite_score':
         return multiplier * (a.composite_score - b.composite_score);
+      case 'volume':
+        return multiplier * (a.volume - b.volume);
       case 'signal':
         return multiplier * a.signal.localeCompare(b.signal);
       case 'weinstein_stage':
@@ -54,6 +56,17 @@ export function ScannerResults({ results, onRefresh, isRefreshing = false }: Sca
     ) : (
       <ChevronDown className="w-3 h-3 inline-block ml-1" />
     );
+  };
+
+  const formatVolume = (vol: number): string => {
+    if (vol >= 10000000) {
+      return `${(vol / 10000000).toFixed(1)}Cr`;
+    } else if (vol >= 100000) {
+      return `${(vol / 100000).toFixed(1)}L`;
+    } else if (vol >= 1000) {
+      return `${(vol / 1000).toFixed(1)}K`;
+    }
+    return vol.toString();
   };
 
   return (
@@ -87,6 +100,9 @@ export function ScannerResults({ results, onRefresh, isRefreshing = false }: Sca
               </th>
               <th className="pb-3 cursor-pointer hover:text-slate-300 transition-colors" onClick={() => handleSort('composite_score')}>
                 Score {renderSortIcon('composite_score')}
+              </th>
+              <th className="pb-3 cursor-pointer hover:text-slate-300 transition-colors" onClick={() => handleSort('volume')}>
+                Volume {renderSortIcon('volume')}
               </th>
               <th className="pb-3 cursor-pointer hover:text-slate-300 transition-colors" onClick={() => handleSort('signal')}>
                 Signal {renderSortIcon('signal')}
@@ -135,6 +151,11 @@ export function ScannerResults({ results, onRefresh, isRefreshing = false }: Sca
                       {result.composite_score.toFixed(0)}
                     </span>
                   </div>
+                </td>
+                <td className="py-3.5">
+                  <span className="text-xs text-slate-400">
+                    {result.volume > 0 ? formatVolume(result.volume) : '—'}
+                  </span>
                 </td>
                 <td className="py-3.5">
                   <SignalBadge signal={result.signal} conviction={result.conviction} />

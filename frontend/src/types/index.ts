@@ -179,6 +179,8 @@ export interface ScanResult {
   trend: string;
   weinstein_stage: number;
   patterns: string[];
+  volume: number;
+  avg_volume?: number;
   timestamp: string;
 }
 
