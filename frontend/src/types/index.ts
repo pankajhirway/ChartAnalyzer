@@ -200,3 +200,15 @@ export interface ScanFilter {
   weinstein_stage?: number;
   max_results?: number;
 }
+
+export interface FundamentalData {
+  symbol: string;
+  pe_ratio?: number;
+  pb_ratio?: number;
+  roe?: number;
+  roce?: number;
+  debt_to_equity?: number;
+  eps_growth?: number;
+  revenue_growth?: number;
+  updated_at?: string;
+}
