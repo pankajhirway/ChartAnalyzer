@@ -84,3 +84,12 @@ async def get_stock_fundamentals(symbol: str):
     if not fundamentals:
         raise HTTPException(status_code=404, detail="Fundamental data not available")
     return fundamentals
+
+
+@router.post("/{symbol}/fundamentals/refresh", response_model=FundamentalData)
+async def refresh_stock_fundamentals(symbol: str):
+    """Force refresh fundamental metrics from source."""
+    fundamentals = await data_provider.refresh_fundamentals(symbol)
+    if not fundamentals:
+        raise HTTPException(status_code=404, detail="Fundamental data not available")
+    return fundamentals

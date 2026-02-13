@@ -306,6 +306,34 @@ class YFinanceProvider(DataProvider):
         if cached:
             return cached
 
+        return await self._fetch_fundamentals(formatted_symbol, symbol, cache_key)
+
+    async def refresh_fundamentals(self, symbol: str) -> Optional[FundamentalData]:
+        """Force refresh fundamental metrics from source, bypassing cache.
+
+        Args:
+            symbol: Stock symbol
+
+        Returns:
+            FundamentalData object or None if not found
+        """
+        formatted_symbol = self._format_symbol(symbol)
+        cache_key = f"fundamentals_{formatted_symbol}"
+        return await self._fetch_fundamentals(formatted_symbol, symbol, cache_key)
+
+    async def _fetch_fundamentals(
+        self, formatted_symbol: str, original_symbol: str, cache_key: str
+    ) -> Optional[FundamentalData]:
+        """Internal method to fetch fundamental data from source.
+
+        Args:
+            formatted_symbol: Formatted symbol for yfinance
+            original_symbol: Original symbol provided by user
+            cache_key: Cache key for storing results
+
+        Returns:
+            FundamentalData object or None if not found
+        """
         try:
             ticker = yf.Ticker(formatted_symbol)
             info = ticker.info
@@ -315,7 +343,7 @@ class YFinanceProvider(DataProvider):
 
             # Fetch fundamental metrics from ticker.info
             fundamental_data = FundamentalData(
-                symbol=symbol.upper().replace(".NS", "").replace(".BO", ""),
+                symbol=original_symbol.upper().replace(".NS", "").replace(".BO", ""),
                 pe_ratio=info.get("trailingPE") or info.get("forwardPE"),
                 pb_ratio=info.get("priceToBook"),
                 roe=info.get("returnOnEquity"),
@@ -330,5 +358,5 @@ class YFinanceProvider(DataProvider):
             return fundamental_data
 
         except Exception as e:
-            logger.error("Failed to get fundamental data", symbol=symbol, error=str(e))
+            logger.error("Failed to get fundamental data", symbol=original_symbol, error=str(e))
             return None

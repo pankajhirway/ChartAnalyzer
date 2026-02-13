@@ -107,3 +107,15 @@ class DataProvider(ABC):
             FundamentalData object or None if not found
         """
         pass
+
+    @abstractmethod
+    async def refresh_fundamentals(self, symbol: str) -> Optional[FundamentalData]:
+        """Force refresh fundamental metrics from source, bypassing cache.
+
+        Args:
+            symbol: Stock symbol
+
+        Returns:
+            FundamentalData object or None if not found
+        """
+        pass
