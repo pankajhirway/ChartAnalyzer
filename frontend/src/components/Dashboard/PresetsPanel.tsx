@@ -18,27 +18,33 @@ interface PresetsPanelProps {
 
 const DEFAULT_PRESETS: PresetOption[] = [
   {
-    id: 'bullish_breakouts',
-    name: 'Bullish Breakouts',
-    description: 'Stocks breaking out with volume confirmation',
+    id: 'minervini_breakouts',
+    name: 'Minervini Breakouts',
+    description: 'Stocks showing VCP (Volatility Contraction Pattern) or base breakout patterns with volume confirmation',
     icon: <TrendingUp className="w-5 h-5" />,
   },
   {
-    id: 'stage2_advancing',
-    name: 'Stage 2 Advancing',
-    description: 'Stocks in Weinstein Stage 2 - optimal buy zone',
+    id: 'stage_2_stocks',
+    name: 'Stage 2 Stocks',
+    description: 'Stocks in Weinstein Stage 2 (advancing phase) with strong uptrend characteristics',
     icon: <Activity className="w-5 h-5" />,
   },
   {
-    id: 'high_conviction',
-    name: 'High Conviction',
-    description: 'Highest confidence buy signals across strategies',
+    id: 'high_composite_score',
+    name: 'High Composite Score',
+    description: 'Stocks with highest composite technical scores across all analysis dimensions',
     icon: <Target className="w-5 h-5" />,
+  },
+  {
+    id: 'volume_breakouts',
+    name: 'Volume Breakouts',
+    description: 'Stocks breaking above resistance with significant volume increase (52-week high focus)',
+    icon: <TrendingUp className="w-5 h-5" />,
   },
   {
     id: 'vcp_setups',
     name: 'VCP Setups',
-    description: 'Minervini-style volatility contraction patterns',
+    description: 'Volatility Contraction Pattern setups - tightening price action with decreasing volatility',
     icon: <Zap className="w-5 h-5" />,
   },
 ];
