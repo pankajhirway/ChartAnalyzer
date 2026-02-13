@@ -50,7 +50,18 @@ async def run_scan(request: ScanRequest):
 
 @router.get("/presets")
 async def get_scan_presets():
-    """Get available preset scan configurations."""
+    """Get available preset scan configurations with full definitions.
+
+    Returns preset configurations including:
+    - id: Unique preset identifier
+    - name: Display name
+    - description: What the preset scans for
+    - strategy_rationale: Why this strategy works
+    - filter: Filter criteria for the scan
+    - recommended_universe: Recommended stock universe
+    - holding_period: Recommended holding period
+    - difficulty: Difficulty level (beginner/intermediate/advanced)
+    """
     return scanner.get_preset_filters()
 
 
