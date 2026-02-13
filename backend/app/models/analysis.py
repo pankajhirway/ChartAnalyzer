@@ -6,6 +6,8 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
+from app.models.fundamental import FundamentalData
+
 
 class TrendType(str, Enum):
     """Trend direction enumeration."""
@@ -245,6 +247,9 @@ class AnalysisResult(BaseModel):
 
     # Indicators
     indicators: Indicators
+
+    # Fundamental Data
+    fundamental_data: Optional[FundamentalData] = Field(None, description="Fundamental metrics data")
 
     # Analysis Notes
     bullish_factors: list[str] = Field(default_factory=list)

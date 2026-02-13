@@ -65,22 +65,25 @@ class CompositeStrategy:
         indicators: dict,
         symbol: Optional[str] = None,
         technical_score: Optional[float] = None,
+        fundamental_data: Optional[FundamentalData] = None,
     ) -> CompositeResult:
         """Run all strategies and combine results.
 
         Args:
             df: DataFrame with OHLCV data
             indicators: Dictionary of calculated indicators
-            symbol: Stock symbol (required for fundamental data)
+            symbol: Stock symbol (required for fundamental data if not provided)
             technical_score: Optional pre-calculated technical score
+            fundamental_data: Optional pre-fetched fundamental data
 
         Returns:
             CompositeResult with combined analysis
         """
-        # Fetch fundamental data for Lynch and Fundamental strategies if symbol provided
-        fundamental_data = None
+        # Fetch fundamental data for Lynch and Fundamental strategies if not provided
         fundamental_score = None
-        if symbol:
+        if fundamental_data:
+            fundamental_score = self.fundamental_scorer.score(fundamental_data)
+        elif symbol:
             try:
                 fundamental_data = await self.data_provider.get_fundamentals(symbol)
                 if fundamental_data:
