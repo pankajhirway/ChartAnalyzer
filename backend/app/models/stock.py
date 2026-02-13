@@ -7,6 +7,34 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
+class FundamentalData(BaseModel):
+    """Fundamental metrics data model."""
+    pe_ratio: Optional[float] = Field(None, description="Price-to-Earnings ratio")
+    pb_ratio: Optional[float] = Field(None, description="Price-to-Book ratio")
+    dividend_yield: Optional[float] = Field(None, description="Dividend yield percentage")
+    roe: Optional[float] = Field(None, description="Return on Equity percentage")
+    debt_to_equity: Optional[float] = Field(None, description="Debt-to-Equity ratio")
+    eps: Optional[float] = Field(None, description="Earnings Per Share")
+    book_value: Optional[float] = Field(None, description="Book value per share")
+    market_cap: Optional[float] = Field(None, description="Market capitalization in crores")
+    face_value: Optional[float] = Field(None, description="Face value of shares")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "pe_ratio": 24.5,
+                "pb_ratio": 1.8,
+                "dividend_yield": 0.85,
+                "roe": 12.5,
+                "debt_to_equity": 0.45,
+                "eps": 98.75,
+                "book_value": 1350.0,
+                "market_cap": 1800000.0,
+                "face_value": 10.0
+            }
+        }
+
+
 class Exchange(str, Enum):
     """Stock exchange enumeration."""
     NSE = "NSE"
@@ -23,6 +51,7 @@ class Stock(BaseModel):
     market_cap: Optional[float] = Field(None, description="Market capitalization in crores")
     isin: Optional[str] = Field(None, description="ISIN code")
     face_value: Optional[float] = Field(None, description="Face value of shares")
+    fundamental_data: Optional[FundamentalData] = Field(None, description="Fundamental analysis metrics")
 
     class Config:
         json_schema_extra = {
@@ -34,7 +63,16 @@ class Stock(BaseModel):
                 "industry": "Refineries",
                 "market_cap": 1800000.0,
                 "isin": "INE002A01018",
-                "face_value": 10.0
+                "face_value": 10.0,
+                "fundamental_data": {
+                    "pe_ratio": 24.5,
+                    "pb_ratio": 1.8,
+                    "dividend_yield": 0.85,
+                    "roe": 12.5,
+                    "debt_to_equity": 0.45,
+                    "eps": 98.75,
+                    "book_value": 1350.0
+                }
             }
         }
 

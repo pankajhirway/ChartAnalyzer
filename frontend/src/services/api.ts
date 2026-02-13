@@ -8,6 +8,8 @@ import type {
   ScanResult,
   WatchlistItem,
   ScanFilter,
+  FundamentalData,
+  FundamentalScore,
 } from '../types';
 
 const api = axios.create({
@@ -165,6 +167,24 @@ export const watchlistApi = {
 
   clear: async () => {
     const { data } = await api.post(`/watchlist/clear`);
+    return data;
+  },
+};
+
+// Fundamentals endpoints
+export const fundamentalsApi = {
+  getFundamentals: async (symbol: string): Promise<FundamentalData> => {
+    const { data } = await api.get(`/stocks/${symbol}/fundamentals`);
+    return data;
+  },
+
+  getFundamentalScore: async (symbol: string): Promise<FundamentalScore> => {
+    const { data } = await api.get(`/stocks/${symbol}/fundamentals/score`);
+    return data;
+  },
+
+  refreshFundamentals: async (symbol: string): Promise<FundamentalData> => {
+    const { data } = await api.post(`/stocks/${symbol}/fundamentals/refresh`);
     return data;
   },
 };

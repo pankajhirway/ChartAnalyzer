@@ -6,6 +6,8 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
+from app.models.fundamental import FundamentalData
+
 
 class TrendType(str, Enum):
     """Trend direction enumeration."""
@@ -196,6 +198,7 @@ class StrategyScores(BaseModel):
     weinstein_score: float = Field(..., ge=0, le=100)
     lynch_score: Optional[float] = Field(None, ge=0, le=100)
     technical_score: float = Field(..., ge=0, le=100)
+    fundamental_score: Optional[float] = Field(None, ge=0, le=100)
     composite_score: float = Field(..., ge=0, le=100)
 
     class Config:
@@ -205,6 +208,7 @@ class StrategyScores(BaseModel):
                 "weinstein_score": 82.0,
                 "lynch_score": 65.0,
                 "technical_score": 75.0,
+                "fundamental_score": 70.0,
                 "composite_score": 76.5
             }
         }
@@ -243,6 +247,9 @@ class AnalysisResult(BaseModel):
 
     # Indicators
     indicators: Indicators
+
+    # Fundamental Data
+    fundamental_data: Optional[FundamentalData] = Field(None, description="Fundamental metrics data")
 
     # Analysis Notes
     bullish_factors: list[str] = Field(default_factory=list)
