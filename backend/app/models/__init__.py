@@ -28,6 +28,23 @@ from app.models.trade import (
     TradeSuggestion,
     TradePlan,
 )
+from app.models.annotation import (
+    Base,
+    AnnotationDB,
+    AnalysisNoteDB,
+    AnnotationType,
+    Color,
+    LineStyle,
+    LineWidth,
+    AnnotationCreate,
+    AnnotationUpdate,
+    AnalysisNoteCreate,
+    AnalysisNoteUpdate,
+    AnnotationResponse,
+    AnalysisNoteResponse,
+    AnnotationListResponse,
+    AnalysisNoteListResponse,
+)
 
 __all__ = [
     # Stock models
@@ -55,4 +72,20 @@ __all__ = [
     "Target",
     "TradeSuggestion",
     "TradePlan",
+    # Annotation models
+    "Base",
+    "AnnotationDB",
+    "AnalysisNoteDB",
+    "AnnotationType",
+    "Color",
+    "LineStyle",
+    "LineWidth",
+    "AnnotationCreate",
+    "AnnotationUpdate",
+    "AnalysisNoteCreate",
+    "AnalysisNoteUpdate",
+    "AnnotationResponse",
+    "AnalysisNoteResponse",
+    "AnnotationListResponse",
+    "AnalysisNoteListResponse",
 ]

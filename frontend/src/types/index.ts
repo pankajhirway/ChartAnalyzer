@@ -200,3 +200,121 @@ export interface ScanFilter {
   weinstein_stage?: number;
   max_results?: number;
 }
+
+// =============================================================================
+// Annotation & Analysis Notes Types
+// =============================================================================
+
+export type AnnotationType =
+  | 'TRENDLINE'
+  | 'HORIZONTAL_LINE'
+  | 'RECTANGLE'
+  | 'TEXT'
+  | 'ARROW'
+  | 'FIBONACCI'
+  | 'SUPPORT_RESISTANCE';
+
+export type AnnotationColor =
+  | '#FF0000'  // RED
+  | '#00FF00'  // GREEN
+  | '#0000FF'  // BLUE
+  | '#FFFF00'  // YELLOW
+  | '#FFA500'  // ORANGE
+  | '#800080'  // PURPLE
+  | '#00FFFF'  // CYAN
+  | '#FF00FF'  // MAGENTA
+  | '#FFFFFF'  // WHITE
+  | '#000000'; // BLACK
+
+export type LineStyle = 'SOLID' | 'DASHED' | 'DOTTED';
+
+export type LineWidth = '1' | '2' | '3' | '4';
+
+// Base annotation interface
+export interface Annotation {
+  id: number;
+  symbol: string;
+  annotation_type: AnnotationType;
+  title?: string;
+  notes?: string;
+  x1?: number;  // Start x coordinate (timestamp)
+  y1?: number;  // Start y coordinate (price)
+  x2?: number;  // End x coordinate (timestamp)
+  y2?: number;  // End y coordinate (price)
+  color: AnnotationColor;
+  line_style: LineStyle;
+  line_width: LineWidth;
+  visible: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// Request models for API
+export interface AnnotationCreate {
+  symbol: string;
+  annotation_type: AnnotationType;
+  title?: string;
+  notes?: string;
+  x1?: number;
+  y1?: number;
+  x2?: number;
+  y2?: number;
+  color?: AnnotationColor;
+  line_style?: LineStyle;
+  line_width?: LineWidth;
+}
+
+export interface AnnotationUpdate {
+  title?: string;
+  notes?: string;
+  x1?: number;
+  y1?: number;
+  x2?: number;
+  y2?: number;
+  color?: AnnotationColor;
+  line_style?: LineStyle;
+  line_width?: LineWidth;
+  visible?: boolean;
+}
+
+// Response model for annotation list
+export interface AnnotationListResponse {
+  symbol: string;
+  count: number;
+  annotations: Annotation[];
+}
+
+// Analysis note interface
+export interface AnalysisNote {
+  id: number;
+  symbol: string;
+  title: string;
+  content: string;
+  tags?: string;
+  category?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Request models for notes API
+export interface AnalysisNoteCreate {
+  symbol: string;
+  title: string;
+  content: string;
+  tags?: string;
+  category?: string;
+}
+
+export interface AnalysisNoteUpdate {
+  title?: string;
+  content?: string;
+  tags?: string;
+  category?: string;
+}
+
+// Response model for notes list
+export interface AnalysisNoteListResponse {
+  symbol: string;
+  count: number;
+  notes: AnalysisNote[];
+}

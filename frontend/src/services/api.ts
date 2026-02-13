@@ -8,6 +8,13 @@ import type {
   ScanResult,
   WatchlistItem,
   ScanFilter,
+  Annotation,
+  AnnotationCreate,
+  AnnotationUpdate,
+  AnnotationListResponse,
+  AnalysisNote,
+  AnalysisNoteCreate,
+  AnalysisNoteUpdate,
 } from '../types';
 
 const api = axios.create({
@@ -165,6 +172,83 @@ export const watchlistApi = {
 
   clear: async () => {
     const { data } = await api.post(`/watchlist/clear`);
+    return data;
+  },
+};
+
+// Annotations endpoints
+export const annotationsApi = {
+  getAnnotations: async (symbol: string): Promise<AnnotationListResponse> => {
+    const { data } = await api.get(`/annotations/${symbol}`);
+    return data;
+  },
+
+  createAnnotation: async (annotation: AnnotationCreate): Promise<Annotation> => {
+    const { data } = await api.post(`/annotations`, annotation);
+    return data;
+  },
+
+  getAnnotationById: async (annotationId: number): Promise<Annotation> => {
+    const { data } = await api.get(`/annotations/id/${annotationId}`);
+    return data;
+  },
+
+  updateAnnotation: async (
+    annotationId: number,
+    updates: AnnotationUpdate
+  ): Promise<Annotation> => {
+    const { data } = await api.patch(`/annotations/id/${annotationId}`, updates);
+    return data;
+  },
+
+  deleteAnnotation: async (annotationId: number) => {
+    const { data } = await api.delete(`/annotations/id/${annotationId}`);
+    return data;
+  },
+
+  deleteAllAnnotations: async (symbol: string) => {
+    const { data } = await api.delete(`/annotations/${symbol}/all`);
+    return data;
+  },
+};
+
+// Notes endpoints
+export const notesApi = {
+  getAllNotes: async () => {
+    const { data } = await api.get(`/notes`);
+    return data as { notes: AnalysisNote[]; count: number; last_updated: string };
+  },
+
+  getNote: async (symbol: string): Promise<AnalysisNote> => {
+    const { data } = await api.get(`/notes/${symbol}`);
+    return data;
+  },
+
+  createNote: async (note: AnalysisNoteCreate): Promise<AnalysisNote> => {
+    const { data } = await api.post(`/notes`, note);
+    return data;
+  },
+
+  putNote: async (symbol: string, note: Omit<AnalysisNoteCreate, 'symbol'>): Promise<AnalysisNote> => {
+    const { data } = await api.put(`/notes/${symbol}`, note);
+    return data;
+  },
+
+  updateNote: async (
+    symbol: string,
+    updates: AnalysisNoteUpdate
+  ): Promise<AnalysisNote> => {
+    const { data } = await api.patch(`/notes/${symbol}`, updates);
+    return data;
+  },
+
+  deleteNote: async (symbol: string) => {
+    const { data } = await api.delete(`/notes/${symbol}`);
+    return data;
+  },
+
+  clearAllNotes: async () => {
+    const { data } = await api.post(`/notes/clear`);
     return data;
   },
 };

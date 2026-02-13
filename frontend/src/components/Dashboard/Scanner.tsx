@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Play, RefreshCw, ScanLine, Zap, History, Clock, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Play, RefreshCw, ScanLine, Zap, History, Clock, Trash2, ChevronDown } from 'lucide-react';
 import { scannerApi } from '../../services/api';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { useAppStore, type ScanHistoryEntry } from '../../store';
