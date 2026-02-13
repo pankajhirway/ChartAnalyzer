@@ -213,3 +213,17 @@ export interface FundamentalData {
   revenue_growth?: number;
   updated_at?: string;
 }
+
+export interface FundamentalScore {
+  score: number;
+  grade: string;
+  bullish_factors: string[];
+  bearish_factors: string[];
+  warnings: string[];
+  detail_scores: {
+    pe_score: number;        // Valuation (max 25)
+    growth_score: number;    // Growth (max 30)
+    roe_score: number;       // Profitability (max 25)
+    debt_score: number;      // Financial Health (max 20)
+  };
+}
