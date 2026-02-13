@@ -22,6 +22,12 @@ class ScanRequest(BaseModel):
     trend: Optional[str] = None
     weinstein_stage: Optional[int] = None
     max_results: int = 20
+    # Fundamental filters
+    min_pe: Optional[float] = None
+    max_pe: Optional[float] = None
+    min_roe: Optional[float] = None
+    max_debt_to_equity: Optional[float] = None
+    min_growth: Optional[float] = None
 
 
 @router.post("/run", response_model=list[ScanResult])
@@ -39,6 +45,12 @@ async def run_scan(request: ScanRequest, response: Response, scan_id: Optional[s
         min_volume_ratio=request.min_volume_ratio,
         trend=request.trend,
         weinstein_stage=request.weinstein_stage,
+        # Fundamental filters
+        min_pe=request.min_pe,
+        max_pe=request.max_pe,
+        min_roe=request.min_roe,
+        max_debt_to_equity=request.max_debt_to_equity,
+        min_growth=request.min_growth,
     )
 
     results = await scanner.scan_universe(

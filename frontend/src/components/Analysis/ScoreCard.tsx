@@ -24,10 +24,11 @@ export function ScoreCard({ scores }: ScoreCardProps) {
   };
 
   const strategyDetails = [
-    { name: 'Minervini SEPA', score: scores.minervini_score, description: 'VCP & momentum', weight: '35%' },
-    { name: 'Weinstein Stage', score: scores.weinstein_score, description: 'Stage analysis', weight: '35%' },
-    { name: 'Lynch GARP', score: scores.lynch_score || 50, description: 'Growth & value', weight: '15%' },
-    { name: 'Technical', score: scores.technical_score, description: 'Indicators', weight: '15%' },
+    { name: 'Minervini SEPA', score: scores.minervini_score, description: 'VCP & momentum', weight: '30%' },
+    { name: 'Weinstein Stage', score: scores.weinstein_score, description: 'Stage analysis', weight: '30%' },
+    { name: 'Fundamental', score: scores.fundamental_score || 50, description: 'Valuation & quality', weight: '20%' },
+    { name: 'Lynch GARP', score: scores.lynch_score || 50, description: 'Growth & value', weight: '10%' },
+    { name: 'Technical', score: scores.technical_score, description: 'Indicators', weight: '10%' },
   ];
 
   return (
@@ -66,7 +67,7 @@ export function ScoreCard({ scores }: ScoreCardProps) {
       </div>
 
       {/* Individual Strategy Scores */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {strategyDetails.map((strategy) => (
           <div
             key={strategy.name}

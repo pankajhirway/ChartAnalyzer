@@ -10,6 +10,8 @@ import type {
   ScanFilter,
   ScannerPreset,
   ScanProgress,
+  FundamentalData,
+  FundamentalScore,
 } from '../types';
 
 // Helper to generate a UUID for scan tracking
@@ -188,6 +190,24 @@ export const watchlistApi = {
 
   clear: async () => {
     const { data } = await api.post(`/watchlist/clear`);
+    return data;
+  },
+};
+
+// Fundamentals endpoints
+export const fundamentalsApi = {
+  getFundamentals: async (symbol: string): Promise<FundamentalData> => {
+    const { data } = await api.get(`/stocks/${symbol}/fundamentals`);
+    return data;
+  },
+
+  getFundamentalScore: async (symbol: string): Promise<FundamentalScore> => {
+    const { data } = await api.get(`/stocks/${symbol}/fundamentals/score`);
+    return data;
+  },
+
+  refreshFundamentals: async (symbol: string): Promise<FundamentalData> => {
+    const { data } = await api.post(`/stocks/${symbol}/fundamentals/refresh`);
     return data;
   },
 };

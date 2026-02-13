@@ -27,12 +27,18 @@ class BaseStrategy(ABC):
     description: str = "Base strategy class"
 
     @abstractmethod
-    def analyze(self, df: pd.DataFrame, indicators: dict) -> StrategyResult:
+    def analyze(
+        self,
+        df: pd.DataFrame,
+        indicators: dict,
+        fundamental_data: Optional["FundamentalData"] = None,
+    ) -> StrategyResult:
         """Analyze price data and return strategy result.
 
         Args:
             df: DataFrame with OHLCV data
             indicators: Dictionary of calculated indicators
+            fundamental_data: Optional fundamental metrics for analysis
 
         Returns:
             StrategyResult with score and analysis
