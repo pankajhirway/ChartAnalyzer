@@ -99,7 +99,7 @@ class AnalyzerService:
             volume_analysis = self.volume_analyzer.analyze_volume(df)
 
             # Run composite strategy
-            strategy_result = self.strategy.analyze(df, indicator_dict)
+            strategy_result = await self.strategy.analyze(df, indicator_dict, symbol)
 
             # Generate trade suggestion
             trade_suggestion = self._generate_trade_suggestion(

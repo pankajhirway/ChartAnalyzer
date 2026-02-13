@@ -5,7 +5,9 @@ from typing import Optional
 
 import pandas as pd
 
+from app.core.yfinance_provider import YFinanceProvider
 from app.models.analysis import StrategyScores, SignalType, ConvictionLevel
+from app.models.fundamental import FundamentalData
 from app.strategies.base import BaseStrategy, StrategyResult
 from app.strategies.minervini import MinerviniStrategy
 from app.strategies.weinstein import WeinsteinStrategy
@@ -51,11 +53,13 @@ class CompositeStrategy:
         self.minervini = MinerviniStrategy()
         self.weinstein = WeinsteinStrategy()
         self.lynch = LynchStrategy()
+        self.data_provider = YFinanceProvider()
 
-    def analyze(
+    async def analyze(
         self,
         df: pd.DataFrame,
         indicators: dict,
+        symbol: Optional[str] = None,
         technical_score: Optional[float] = None,
     ) -> CompositeResult:
         """Run all strategies and combine results.
@@ -63,15 +67,25 @@ class CompositeStrategy:
         Args:
             df: DataFrame with OHLCV data
             indicators: Dictionary of calculated indicators
+            symbol: Stock symbol (required for fundamental data)
             technical_score: Optional pre-calculated technical score
 
         Returns:
             CompositeResult with combined analysis
         """
+        # Fetch fundamental data for Lynch strategy if symbol provided
+        fundamental_data = None
+        if symbol:
+            try:
+                fundamental_data = await self.data_provider.get_fundamentals(symbol)
+            except Exception:
+                # Silently fail if fundamental data unavailable
+                fundamental_data = None
+
         # Run individual strategies
         minervini_result = self.minervini.analyze(df, indicators)
         weinstein_result = self.weinstein.analyze(df, indicators)
-        lynch_result = self.lynch.analyze(df, indicators)
+        lynch_result = self.lynch.analyze(df, indicators, fundamental_data)
 
         # Calculate technical score if not provided
         if technical_score is None:
