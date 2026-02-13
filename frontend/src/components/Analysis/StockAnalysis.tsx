@@ -9,6 +9,7 @@ import { ScoreCard } from './ScoreCard';
 import { SignalDisplay } from './SignalDisplay';
 import { TradeSuggestion } from './TradeSuggestion';
 import { PriceChart } from '../Chart/PriceChart';
+import { NotesSection } from '../Chart/NotesSection';
 
 export function StockAnalysis() {
   const { symbol } = useParams<{ symbol: string }>();
@@ -178,6 +179,13 @@ export function StockAnalysis() {
             conviction={analysis.conviction}
             currentPrice={analysis.current_price}
           />
+        </div>
+      )}
+
+      {/* Analysis Notes */}
+      {symbol && (
+        <div className="animate-fade-in-up" style={{ animationDelay: '375ms' }}>
+          <NotesSection symbol={symbol} />
         </div>
       )}
     </div>
