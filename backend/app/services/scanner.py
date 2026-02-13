@@ -25,6 +25,12 @@ class ScanFilter:
     min_volume_ratio: Optional[float] = None
     trend: Optional[str] = None  # BULLISH, BEARISH, NEUTRAL
     weinstein_stage: Optional[int] = None  # 1, 2, 3, 4
+    # Fundamental filters
+    min_pe: Optional[float] = None
+    max_pe: Optional[float] = None
+    min_roe: Optional[float] = None
+    max_debt_to_equity: Optional[float] = None
+    min_growth: Optional[float] = None  # Minimum EPS or revenue growth (%)
 
 
 @dataclass
@@ -40,6 +46,12 @@ class ScanResult:
     weinstein_stage: int
     patterns: list[str]
     timestamp: datetime
+    pe_ratio: Optional[float] = None
+    pb_ratio: Optional[float] = None
+    roe: Optional[float] = None
+    debt_to_equity: Optional[float] = None
+    eps_growth: Optional[float] = None
+    revenue_growth: Optional[float] = None
 
 
 class ScannerService:
@@ -124,6 +136,22 @@ class ScannerService:
         """Create a scan result from analysis."""
         pattern_names = [p.pattern_name for p in analysis.detected_patterns[:3]]
 
+        # Extract fundamental data if available
+        pe_ratio = None
+        pb_ratio = None
+        roe = None
+        debt_to_equity = None
+        eps_growth = None
+        revenue_growth = None
+
+        if analysis.fundamental_data:
+            pe_ratio = analysis.fundamental_data.pe_ratio
+            pb_ratio = analysis.fundamental_data.pb_ratio
+            roe = analysis.fundamental_data.roe
+            debt_to_equity = analysis.fundamental_data.debt_to_equity
+            eps_growth = analysis.fundamental_data.eps_growth
+            revenue_growth = analysis.fundamental_data.revenue_growth
+
         return ScanResult(
             symbol=analysis.symbol,
             company_name=analysis.company_name,
@@ -135,6 +163,12 @@ class ScannerService:
             weinstein_stage=analysis.weinstein_stage.value,
             patterns=pattern_names,
             timestamp=analysis.timestamp,
+            pe_ratio=pe_ratio,
+            pb_ratio=pb_ratio,
+            roe=roe,
+            debt_to_equity=debt_to_equity,
+            eps_growth=eps_growth,
+            revenue_growth=revenue_growth,
         )
 
     def _passes_filter(self, result: ScanResult, f: ScanFilter) -> bool:
@@ -157,6 +191,30 @@ class ScannerService:
 
         if f.weinstein_stage and result.weinstein_stage != f.weinstein_stage:
             return False
+
+        # Fundamental filters
+        if f.min_pe is not None:
+            if result.pe_ratio is None or result.pe_ratio < f.min_pe:
+                return False
+
+        if f.max_pe is not None:
+            if result.pe_ratio is None or result.pe_ratio > f.max_pe:
+                return False
+
+        if f.min_roe is not None:
+            if result.roe is None or result.roe < f.min_roe:
+                return False
+
+        if f.max_debt_to_equity is not None:
+            if result.debt_to_equity is None or result.debt_to_equity > f.max_debt_to_equity:
+                return False
+
+        if f.min_growth is not None:
+            # Check both EPS and revenue growth - at least one must meet the minimum
+            eps_ok = result.eps_growth is not None and result.eps_growth >= f.min_growth
+            revenue_ok = result.revenue_growth is not None and result.revenue_growth >= f.min_growth
+            if not (eps_ok or revenue_ok):
+                return False
 
         return True
 

@@ -13,6 +13,7 @@ from app.analysis.trend_analysis import TrendAnalyzer
 from app.analysis.volume_analysis import VolumeAnalyzer
 from app.core.yfinance_provider import YFinanceProvider
 from app.models.stock import PriceData
+from app.models.fundamental import FundamentalData
 from app.models.analysis import (
     AnalysisResult,
     TrendType,
@@ -79,6 +80,22 @@ class AnalyzerService:
             stock_info = await self.data_provider.get_stock_info(symbol)
             company_name = stock_info.company_name if stock_info else None
 
+            # Fetch fundamental data
+            fundamental_data = None
+            try:
+                fundamental_data = await self.data_provider.get_fundamentals(symbol)
+                logger.info(
+                    "Fundamental data fetched",
+                    symbol=symbol,
+                    has_data=fundamental_data is not None,
+                )
+            except Exception as e:
+                logger.warning(
+                    "Failed to fetch fundamental data",
+                    symbol=symbol,
+                    error=str(e),
+                )
+
             # Calculate indicators
             indicator_values = self.indicators.calculate_all(df)
             indicator_dict = self._indicators_to_dict(indicator_values)
@@ -98,8 +115,13 @@ class AnalyzerService:
             # Analyze volume
             volume_analysis = self.volume_analyzer.analyze_volume(df)
 
-            # Run composite strategy
-            strategy_result = self.strategy.analyze(df, indicator_dict)
+            # Run composite strategy with fundamental data
+            strategy_result = await self.strategy.analyze(
+                df=df,
+                indicators=indicator_dict,
+                symbol=symbol,
+                fundamental_data=fundamental_data,
+            )
 
             # Generate trade suggestion
             trade_suggestion = self._generate_trade_suggestion(
@@ -142,6 +164,7 @@ class AnalyzerService:
                 signal=strategy_result.signal,
                 conviction=strategy_result.conviction,
                 indicators=indicator_values,
+                fundamental_data=fundamental_data,
                 bullish_factors=bullish_factors,
                 bearish_factors=bearish_factors,
                 warnings=warnings,

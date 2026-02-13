@@ -106,6 +106,7 @@ export interface StrategyScores {
   weinstein_score: number;
   lynch_score?: number;
   technical_score: number;
+  fundamental_score: number;
   composite_score: number;
 }
 
@@ -199,4 +200,41 @@ export interface ScanFilter {
   trend?: TrendType;
   weinstein_stage?: number;
   max_results?: number;
+
+  // Fundamental filters
+  pe_min?: number;
+  pe_max?: number;
+  pb_max?: number;
+  roe_min?: number;
+  roce_min?: number;
+  debt_to_equity_max?: number;
+  eps_growth_min?: number;
+  revenue_growth_min?: number;
+  market_cap_min?: number;
+}
+
+export interface FundamentalData {
+  symbol: string;
+  pe_ratio?: number;
+  pb_ratio?: number;
+  roe?: number;
+  roce?: number;
+  debt_to_equity?: number;
+  eps_growth?: number;
+  revenue_growth?: number;
+  updated_at?: string;
+}
+
+export interface FundamentalScore {
+  score: number;
+  grade: string;
+  bullish_factors: string[];
+  bearish_factors: string[];
+  warnings: string[];
+  detail_scores: {
+    pe_score: number;        // Valuation (max 25)
+    growth_score: number;    // Growth (max 30)
+    roe_score: number;       // Profitability (max 25)
+    debt_score: number;      // Financial Health (max 20)
+  };
 }
