@@ -2,13 +2,14 @@ import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Plus, RefreshCw, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { analysisApi, watchlistApi } from '../../services/api';
+import { analysisApi, watchlistApi, fundamentalsApi } from '../../services/api';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { AnalysisSummary } from './AnalysisSummary';
 import { ScoreCard } from './ScoreCard';
 import { SignalDisplay } from './SignalDisplay';
 import { TradeSuggestion } from './TradeSuggestion';
 import { PriceChart } from '../Chart/PriceChart';
+import { FundamentalMetrics } from './FundamentalMetrics';
 
 export function StockAnalysis() {
   const { symbol } = useParams<{ symbol: string }>();
@@ -18,6 +19,12 @@ export function StockAnalysis() {
     queryFn: () => analysisApi.analyze(symbol!),
     enabled: !!symbol,
     retry: 1,
+  });
+
+  const { data: fundamentals } = useQuery({
+    queryKey: ['fundamentals', symbol],
+    queryFn: () => fundamentalsApi.getFundamentals(symbol!),
+    enabled: !!symbol,
   });
 
   const addToWatchlist = async () => {
@@ -154,6 +161,13 @@ export function StockAnalysis() {
       {analysis.scores && (
         <div className="animate-fade-in-up" style={{ animationDelay: '150ms' }}>
           <ScoreCard scores={analysis.scores} />
+        </div>
+      )}
+
+      {/* Fundamental Metrics */}
+      {fundamentals && (
+        <div className="animate-fade-in-up" style={{ animationDelay: '175ms' }}>
+          <FundamentalMetrics data={fundamentals} />
         </div>
       )}
 
