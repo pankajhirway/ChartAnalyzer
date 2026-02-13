@@ -2,6 +2,7 @@ import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Plus, RefreshCw, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
 import { analysisApi, watchlistApi } from '../../services/api';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { AnalysisSummary } from './AnalysisSummary';
@@ -9,7 +10,10 @@ import { ScoreCard } from './ScoreCard';
 import { SignalDisplay } from './SignalDisplay';
 import { TradeSuggestion } from './TradeSuggestion';
 import { PriceChart } from '../Chart/PriceChart';
+import { AnnotationTools } from '../Chart/AnnotationTools';
+import { AnnotationsPanel } from '../Chart/AnnotationsPanel';
 import { NotesSection } from '../Chart/NotesSection';
+import { useAnnotationStore } from '../../store/annotationStore';
 
 export function StockAnalysis() {
   const { symbol } = useParams<{ symbol: string }>();
@@ -20,6 +24,20 @@ export function StockAnalysis() {
     enabled: !!symbol,
     retry: 1,
   });
+
+  // Annotation store integration
+  const {
+    annotations,
+    loadAnnotations,
+    annotationsVisible,
+  } = useAnnotationStore();
+
+  // Load annotations when symbol changes
+  useEffect(() => {
+    if (symbol) {
+      loadAnnotations(symbol);
+    }
+  }, [symbol, loadAnnotations]);
 
   const addToWatchlist = async () => {
     if (symbol) {
@@ -162,13 +180,29 @@ export function StockAnalysis() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 animate-fade-in-up" style={{ animationDelay: '225ms' }}>
         {/* Chart */}
         <div className="card">
-          <h3 className="card-header">Price Chart</h3>
-          {symbol && <PriceChart symbol={symbol} />}
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="card-header mb-0">Price Chart</h3>
+            {symbol && <AnnotationTools symbol={symbol} />}
+          </div>
+          {symbol && (
+            <PriceChart
+              symbol={symbol}
+              annotations={annotations}
+              annotationsVisible={annotationsVisible}
+            />
+          )}
         </div>
 
         {/* Analysis Summary */}
         {analysis && <AnalysisSummary analysis={analysis} />}
       </div>
+
+      {/* Annotations Panel */}
+      {symbol && (
+        <div className="animate-fade-in-up" style={{ animationDelay: '260ms' }}>
+          <AnnotationsPanel symbol={symbol} />
+        </div>
+      )}
 
       {/* Trade Suggestion */}
       {analysis.signal && analysis.signal !== 'HOLD' && (
