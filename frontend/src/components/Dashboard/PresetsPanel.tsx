@@ -4,6 +4,7 @@ export interface PresetOption {
   id: string;
   name: string;
   description: string;
+  strategy_rationale?: string;
   icon?: React.ReactNode;
 }
 
@@ -116,13 +117,18 @@ export function PresetsPanel({
 
       {/* Selected Preset Info */}
       {selectedPreset && (
-        <div className="mt-4 p-3 rounded-lg bg-blue-500/8 border border-blue-500/10 animate-fade-in-up">
-          <div className="flex items-center gap-2">
+        <div className="mt-4 p-4 rounded-lg bg-blue-500/8 border border-blue-500/10 animate-fade-in-up">
+          <div className="flex items-center gap-2 mb-2">
             <Zap className="w-3.5 h-3.5 text-blue-400" />
-            <span className="text-sm text-blue-300">
+            <span className="text-sm font-medium text-blue-300">
               {presets.find((p) => p.id === selectedPreset)?.description}
             </span>
           </div>
+          {presets.find((p) => p.id === selectedPreset)?.strategy_rationale && (
+            <div className="mt-2 text-xs text-blue-200/70 leading-relaxed">
+              {presets.find((p) => p.id === selectedPreset)?.strategy_rationale}
+            </div>
+          )}
         </div>
       )}
     </div>

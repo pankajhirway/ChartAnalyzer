@@ -63,6 +63,7 @@ export function Scanner() {
           id,
           name: preset.name,
           description: preset.description,
+          strategy_rationale: preset.strategy_rationale,
           icon: PRESET_ICONS[id] || <Zap className="w-5 h-5" />,
         }));
         setPresets(transformedPresets);
