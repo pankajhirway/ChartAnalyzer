@@ -196,6 +196,7 @@ class StrategyScores(BaseModel):
     weinstein_score: float = Field(..., ge=0, le=100)
     lynch_score: Optional[float] = Field(None, ge=0, le=100)
     technical_score: float = Field(..., ge=0, le=100)
+    fundamental_score: Optional[float] = Field(None, ge=0, le=100)
     composite_score: float = Field(..., ge=0, le=100)
 
     class Config:
@@ -205,6 +206,7 @@ class StrategyScores(BaseModel):
                 "weinstein_score": 82.0,
                 "lynch_score": 65.0,
                 "technical_score": 75.0,
+                "fundamental_score": 70.0,
                 "composite_score": 76.5
             }
         }

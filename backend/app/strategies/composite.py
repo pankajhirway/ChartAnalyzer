@@ -8,6 +8,7 @@ import pandas as pd
 from app.core.yfinance_provider import YFinanceProvider
 from app.models.analysis import StrategyScores, SignalType, ConvictionLevel
 from app.models.fundamental import FundamentalData
+from app.services.fundamental_scorer import FundamentalScorer
 from app.strategies.base import BaseStrategy, StrategyResult
 from app.strategies.minervini import MinerviniStrategy
 from app.strategies.weinstein import WeinsteinStrategy
@@ -30,10 +31,11 @@ class CompositeStrategy:
     """Composite Strategy combining all trading strategies.
 
     Weighting:
-    - Minervini SEPA: 35%
-    - Weinstein Stage Analysis: 35%
-    - Lynch GARP: 15%
-    - Technical Score: 15%
+    - Minervini SEPA: 30%
+    - Weinstein Stage Analysis: 30%
+    - Lynch GARP: 10%
+    - Fundamental Score: 20%
+    - Technical Score: 10%
 
     Signal thresholds:
     - Bullish: composite_score >= 70
@@ -42,10 +44,11 @@ class CompositeStrategy:
     """
 
     WEIGHTS = {
-        "minervini": 0.35,
-        "weinstein": 0.35,
-        "lynch": 0.15,
-        "technical": 0.15,
+        "minervini": 0.30,
+        "weinstein": 0.30,
+        "lynch": 0.10,
+        "fundamental": 0.20,
+        "technical": 0.10,
     }
 
     def __init__(self):
@@ -53,6 +56,7 @@ class CompositeStrategy:
         self.minervini = MinerviniStrategy()
         self.weinstein = WeinsteinStrategy()
         self.lynch = LynchStrategy()
+        self.fundamental_scorer = FundamentalScorer()
         self.data_provider = YFinanceProvider()
 
     async def analyze(
@@ -73,11 +77,14 @@ class CompositeStrategy:
         Returns:
             CompositeResult with combined analysis
         """
-        # Fetch fundamental data for Lynch strategy if symbol provided
+        # Fetch fundamental data for Lynch and Fundamental strategies if symbol provided
         fundamental_data = None
+        fundamental_score = None
         if symbol:
             try:
                 fundamental_data = await self.data_provider.get_fundamentals(symbol)
+                if fundamental_data:
+                    fundamental_score = self.fundamental_scorer.score(fundamental_data)
             except Exception:
                 # Silently fail if fundamental data unavailable
                 fundamental_data = None
@@ -91,13 +98,25 @@ class CompositeStrategy:
         if technical_score is None:
             technical_score = self._calculate_technical_score(df, indicators)
 
-        # Calculate weighted composite score
-        composite_score = (
-            minervini_result.score * self.WEIGHTS["minervini"] +
-            weinstein_result.score * self.WEIGHTS["weinstein"] +
-            lynch_result.score * self.WEIGHTS["lynch"] +
-            technical_score * self.WEIGHTS["technical"]
-        )
+        # Calculate weighted composite score (fundamental uses default weight if unavailable)
+        fundamental_weight = self.WEIGHTS["fundamental"]
+        if fundamental_score is None:
+            # Redistribute weight if fundamental score unavailable
+            total_available_weight = sum(self.WEIGHTS.values()) - fundamental_weight
+            composite_score = (
+                minervini_result.score * (self.WEIGHTS["minervini"] / total_available_weight) +
+                weinstein_result.score * (self.WEIGHTS["weinstein"] / total_available_weight) +
+                lynch_result.score * (self.WEIGHTS["lynch"] / total_available_weight) +
+                technical_score * (self.WEIGHTS["technical"] / total_available_weight)
+            )
+        else:
+            composite_score = (
+                minervini_result.score * self.WEIGHTS["minervini"] +
+                weinstein_result.score * self.WEIGHTS["weinstein"] +
+                lynch_result.score * self.WEIGHTS["lynch"] +
+                fundamental_score.score * fundamental_weight +
+                technical_score * self.WEIGHTS["technical"]
+            )
 
         # Create scores object
         scores = StrategyScores(
@@ -105,6 +124,7 @@ class CompositeStrategy:
             weinstein_score=round(weinstein_result.score, 1),
             lynch_score=round(lynch_result.score, 1),
             technical_score=round(technical_score, 1),
+            fundamental_score=round(fundamental_score.score, 1) if fundamental_score else None,
             composite_score=round(composite_score, 1),
         )
 
@@ -135,6 +155,15 @@ class CompositeStrategy:
         for warning in lynch_result.warnings[:2]:
             all_warnings.append(f"[Lynch] {warning}")
 
+        # Add fundamental factors if available
+        if fundamental_score:
+            for factor in fundamental_score.bullish_factors[:3]:
+                all_bullish.append(f"[Fundamental] {factor}")
+            for factor in fundamental_score.bearish_factors[:2]:
+                all_bearish.append(f"[Fundamental] {factor}")
+            for warning in fundamental_score.warnings[:2]:
+                all_warnings.append(f"[Fundamental] {warning}")
+
         # Determine signal and conviction
         signal, conviction = self._determine_signal(composite_score, scores)
 
@@ -159,6 +188,13 @@ class CompositeStrategy:
                 "score": technical_score,
             },
         }
+
+        # Add fundamental details if available
+        if fundamental_score:
+            strategy_details["fundamental"] = {
+                "score": fundamental_score.score,
+                "grade": fundamental_score.grade,
+            }
 
         return CompositeResult(
             scores=scores,
@@ -304,6 +340,9 @@ class CompositeStrategy:
             f"  - Lynch GARP: {result.scores.lynch_score:.1f}",
             f"  - Technical: {result.scores.technical_score:.1f}",
         ]
+
+        if result.scores.fundamental_score is not None:
+            lines.append(f"  - Fundamental: {result.scores.fundamental_score:.1f}")
 
         if result.bullish_factors:
             lines.append("")
