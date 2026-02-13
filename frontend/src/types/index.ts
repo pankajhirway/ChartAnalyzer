@@ -200,6 +200,17 @@ export interface ScanFilter {
   trend?: TrendType;
   weinstein_stage?: number;
   max_results?: number;
+
+  // Fundamental filters
+  pe_min?: number;
+  pe_max?: number;
+  pb_max?: number;
+  roe_min?: number;
+  roce_min?: number;
+  debt_to_equity_max?: number;
+  eps_growth_min?: number;
+  revenue_growth_min?: number;
+  market_cap_min?: number;
 }
 
 export interface FundamentalData {

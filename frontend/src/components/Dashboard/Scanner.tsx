@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Play, RefreshCw, ScanLine, Zap, History, Clock, Trash2, ChevronDown } from 'lucide-react';
+import { Play, RefreshCw, ScanLine, Zap, History, Clock, Trash2, ChevronDown, ChevronUp, Filter } from 'lucide-react';
 import { scannerApi } from '../../services/api';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { useAppStore, type ScanHistoryEntry } from '../../store';
@@ -25,6 +25,17 @@ export function Scanner() {
   const [selectedPreset, setSelectedPreset] = useState('bullish_breakouts');
   const [isScanning, setIsScanning] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showFundamentalFilters, setShowFundamentalFilters] = useState(false);
+
+  // Fundamental filter states
+  const [peMin, setPeMin] = useState<number | undefined>(undefined);
+  const [peMax, setPeMax] = useState<number | undefined>(undefined);
+  const [pbMax, setPbMax] = useState<number | undefined>(undefined);
+  const [roeMin, setRoeMin] = useState<number | undefined>(undefined);
+  const [roceMin, setRoceMin] = useState<number | undefined>(undefined);
+  const [debtToEquityMax, setDebtToEquityMax] = useState<number | undefined>(undefined);
+  const [epsGrowthMin, setEpsGrowthMin] = useState<number | undefined>(undefined);
+  const [revenueGrowthMin, setRevenueGrowthMin] = useState<number | undefined>(undefined);
 
   // Get store actions and state
   const {
@@ -64,6 +75,17 @@ export function Scanner() {
     try {
       let results: ScanResult[];
 
+      // Build fundamental filters
+      const fundamentalFilters: Record<string, number> = {};
+      if (peMin !== undefined) fundamentalFilters.pe_min = peMin;
+      if (peMax !== undefined) fundamentalFilters.pe_max = peMax;
+      if (pbMax !== undefined) fundamentalFilters.pb_max = pbMax;
+      if (roeMin !== undefined) fundamentalFilters.roe_min = roeMin;
+      if (roceMin !== undefined) fundamentalFilters.roce_min = roceMin;
+      if (debtToEquityMax !== undefined) fundamentalFilters.debt_to_equity_max = debtToEquityMax;
+      if (epsGrowthMin !== undefined) fundamentalFilters.eps_growth_min = epsGrowthMin;
+      if (revenueGrowthMin !== undefined) fundamentalFilters.revenue_growth_min = revenueGrowthMin;
+
       switch (selectedPreset) {
         case 'bullish_breakouts':
           results = await scannerApi.scanBreakouts(selectedUniverse);
@@ -78,6 +100,7 @@ export function Scanner() {
           results = await scannerApi.runScan({
             universe: selectedUniverse,
             min_composite_score: 50,
+            ...fundamentalFilters,
           });
       }
 
@@ -228,6 +251,166 @@ export function Scanner() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Fundamental Filters Section */}
+      <div className="card" style={{ animationDelay: '100ms' }}>
+        <button
+          onClick={() => setShowFundamentalFilters(!showFundamentalFilters)}
+          className="w-full flex items-center justify-between p-3 hover:bg-slate-800/30 rounded-lg transition-colors"
+        >
+          <div className="flex items-center space-x-2.5">
+            <Filter className="w-4 h-4 text-emerald-400" />
+            <h3 className="text-sm font-medium text-slate-200">
+              Fundamental Filters
+            </h3>
+          </div>
+          {showFundamentalFilters ? (
+            <ChevronUp className="w-4 h-4 text-slate-500" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-slate-500" />
+          )}
+        </button>
+
+        {showFundamentalFilters && (
+          <div className="mt-4 pt-4 border-t border-slate-700/50">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* P/E Ratio Range */}
+              <div className="space-y-2">
+                <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider">
+                  P/E Ratio Range
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={peMin ?? ''}
+                    onChange={(e) => setPeMin(e.target.value === '' ? undefined : Number(e.target.value))}
+                    placeholder="Min"
+                    className="w-full bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-all"
+                  />
+                  <span className="text-slate-500 text-xs">-</span>
+                  <input
+                    type="number"
+                    value={peMax ?? ''}
+                    onChange={(e) => setPeMax(e.target.value === '' ? undefined : Number(e.target.value))}
+                    placeholder="Max"
+                    className="w-full bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* P/B Ratio Max */}
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">
+                  Max P/B Ratio
+                </label>
+                <input
+                  type="number"
+                  value={pbMax ?? ''}
+                  onChange={(e) => setPbMax(e.target.value === '' ? undefined : Number(e.target.value))}
+                  placeholder="Max P/B"
+                  className="w-full bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-all"
+                />
+              </div>
+
+              {/* ROE Minimum */}
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">
+                  Min ROE (%)
+                </label>
+                <input
+                  type="number"
+                  value={roeMin ?? ''}
+                  onChange={(e) => setRoeMin(e.target.value === '' ? undefined : Number(e.target.value))}
+                  placeholder="Min ROE"
+                  className="w-full bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-all"
+                />
+              </div>
+
+              {/* ROCE Minimum */}
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">
+                  Min ROCE (%)
+                </label>
+                <input
+                  type="number"
+                  value={roceMin ?? ''}
+                  onChange={(e) => setRoceMin(e.target.value === '' ? undefined : Number(e.target.value))}
+                  placeholder="Min ROCE"
+                  className="w-full bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-all"
+                />
+              </div>
+
+              {/* Debt to Equity Max */}
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">
+                  Max Debt/Equity
+                </label>
+                <input
+                  type="number"
+                  value={debtToEquityMax ?? ''}
+                  onChange={(e) => setDebtToEquityMax(e.target.value === '' ? undefined : Number(e.target.value))}
+                  placeholder="Max D/E"
+                  className="w-full bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-all"
+                />
+              </div>
+
+              {/* EPS Growth Minimum */}
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">
+                  Min EPS Growth (%)
+                </label>
+                <input
+                  type="number"
+                  value={epsGrowthMin ?? ''}
+                  onChange={(e) => setEpsGrowthMin(e.target.value === '' ? undefined : Number(e.target.value))}
+                  placeholder="Min EPS Growth"
+                  className="w-full bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-all"
+                />
+              </div>
+
+              {/* Revenue Growth Minimum */}
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">
+                  Min Revenue Growth (%)
+                </label>
+                <input
+                  type="number"
+                  value={revenueGrowthMin ?? ''}
+                  onChange={(e) => setRevenueGrowthMin(e.target.value === '' ? undefined : Number(e.target.value))}
+                  placeholder="Min Rev Growth"
+                  className="w-full bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-all"
+                />
+              </div>
+
+              {/* Clear Filters Button */}
+              <div className="flex items-end">
+                <button
+                  onClick={() => {
+                    setPeMin(undefined);
+                    setPeMax(undefined);
+                    setPbMax(undefined);
+                    setRoeMin(undefined);
+                    setRoceMin(undefined);
+                    setDebtToEquityMax(undefined);
+                    setEpsGrowthMin(undefined);
+                    setRevenueGrowthMin(undefined);
+                  }}
+                  className="w-full px-4 py-2 text-sm text-slate-400 border border-slate-700/50 rounded-lg hover:bg-slate-800/60 hover:text-slate-300 transition-all"
+                >
+                  Clear Filters
+                </button>
+              </div>
+            </div>
+
+            {/* Filter Info */}
+            <div className="mt-3 p-2.5 rounded-md bg-emerald-500/8 border border-emerald-500/10">
+              <p className="text-xs text-emerald-300">
+                📊 Apply fundamental filters to find fundamentally strong stocks. Leave fields empty to ignore a filter.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Scan History Panel */}
