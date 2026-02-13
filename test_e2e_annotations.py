@@ -23,7 +23,7 @@ if user_site not in sys.path:
 
 import httpx
 
-BASE_URL = "http://localhost:8001"
+BASE_URL = "http://localhost:8000"
 SYMBOL = "RELIANCE"
 
 def print_section(title):
@@ -184,7 +184,7 @@ def test_notes_api():
         "symbol": SYMBOL,
         "title": "RELIANCE Analysis",
         "content": "Strong bullish trend with good volume support. Key resistance at 2700.",
-        "tags": ["bullish", "trend", "volume"]
+        "tags": "bullish, trend, volume"
     }
     response = httpx.post(f"{BASE_URL}/api/notes", json=note_data)
     if response.status_code in [200, 201]:
@@ -218,7 +218,7 @@ def test_notes_api():
     print_info("Updating note...")
     update_data = {
         "content": "Updated: Strong breakout above resistance with increasing volume.",
-        "tags": ["breakout", "high-volume"]
+        "tags": "breakout, high-volume"
     }
     response = httpx.patch(f"{BASE_URL}/api/notes/{SYMBOL}", json=update_data)
     if response.status_code == 200:
