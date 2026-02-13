@@ -10,6 +10,7 @@ import { SignalDisplay } from './SignalDisplay';
 import { TradeSuggestion } from './TradeSuggestion';
 import { PriceChart } from '../Chart/PriceChart';
 import { FundamentalMetrics } from './FundamentalMetrics';
+import { FundamentalScoreCard } from './FundamentalScoreCard';
 
 export function StockAnalysis() {
   const { symbol } = useParams<{ symbol: string }>();
@@ -24,6 +25,12 @@ export function StockAnalysis() {
   const { data: fundamentals } = useQuery({
     queryKey: ['fundamentals', symbol],
     queryFn: () => fundamentalsApi.getFundamentals(symbol!),
+    enabled: !!symbol,
+  });
+
+  const { data: fundamentalScore } = useQuery({
+    queryKey: ['fundamentalScore', symbol],
+    queryFn: () => fundamentalsApi.getFundamentalScore(symbol!),
     enabled: !!symbol,
   });
 
@@ -168,6 +175,13 @@ export function StockAnalysis() {
       {fundamentals && (
         <div className="animate-fade-in-up" style={{ animationDelay: '175ms' }}>
           <FundamentalMetrics data={fundamentals} />
+        </div>
+      )}
+
+      {/* Fundamental Score Card */}
+      {fundamentalScore && (
+        <div className="animate-fade-in-up" style={{ animationDelay: '185ms' }}>
+          <FundamentalScoreCard score={fundamentalScore} />
         </div>
       )}
 

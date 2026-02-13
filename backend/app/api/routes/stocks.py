@@ -4,10 +4,12 @@ from fastapi import APIRouter, HTTPException, Query
 
 from app.core.yfinance_provider import YFinanceProvider
 from app.models.stock import Stock, StockQuote, StockSearchResult, PriceDataResponse
-from app.models.fundamental import FundamentalData
+from app.models.fundamental import FundamentalData, FundamentalScore
+from app.services.fundamental_scorer import FundamentalScorer
 
 router = APIRouter()
 data_provider = YFinanceProvider()
+scorer = FundamentalScorer()
 
 
 @router.get("/search", response_model=list[StockSearchResult])
@@ -93,3 +95,16 @@ async def refresh_stock_fundamentals(symbol: str):
     if not fundamentals:
         raise HTTPException(status_code=404, detail="Fundamental data not available")
     return fundamentals
+
+
+@router.get("/{symbol}/fundamentals/score", response_model=FundamentalScore)
+async def get_stock_fundamental_score(symbol: str):
+    """Get fundamental score for a stock."""
+    fundamentals = await data_provider.get_fundamentals(symbol)
+    if not fundamentals:
+        raise HTTPException(status_code=404, detail="Fundamental data not available")
+
+    score = scorer.score(fundamentals)
+    if not score:
+        raise HTTPException(status_code=404, detail="Insufficient data for scoring")
+    return score

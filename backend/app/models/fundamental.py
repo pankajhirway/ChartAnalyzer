@@ -1,5 +1,6 @@
 """Fundamental data models."""
 
+from dataclasses import dataclass, asdict
 from datetime import datetime
 from typing import Optional
 
@@ -8,6 +9,34 @@ from sqlalchemy import DateTime, Float, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
+
+
+@dataclass
+class FundamentalScore:
+    """Result from fundamental scoring analysis."""
+    score: float
+    grade: str
+    bullish_factors: list[str]
+    bearish_factors: list[str]
+    warnings: list[str]
+    detail_scores: dict[str, float]
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "score": 72.5,
+                "grade": "B+",
+                "bullish_factors": ["Attractive P/E ratio (18.5)", "Strong ROE (18.2%)"],
+                "bearish_factors": ["Moderate-high debt (1.2)"],
+                "warnings": [],
+                "detail_scores": {
+                    "pe_score": 20.0,
+                    "growth_score": 22.5,
+                    "roe_score": 18.0,
+                    "debt_score": 12.0
+                }
+            }
+        }
 
 
 class FundamentalData(BaseModel):

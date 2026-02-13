@@ -9,6 +9,7 @@ import type {
   WatchlistItem,
   ScanFilter,
   FundamentalData,
+  FundamentalScore,
 } from '../types';
 
 const api = axios.create({
@@ -174,6 +175,11 @@ export const watchlistApi = {
 export const fundamentalsApi = {
   getFundamentals: async (symbol: string): Promise<FundamentalData> => {
     const { data } = await api.get(`/stocks/${symbol}/fundamentals`);
+    return data;
+  },
+
+  getFundamentalScore: async (symbol: string): Promise<FundamentalScore> => {
+    const { data } = await api.get(`/stocks/${symbol}/fundamentals/score`);
     return data;
   },
 
