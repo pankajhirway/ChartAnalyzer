@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.api.routes import stocks, analysis, scanner, watchlist, annotations
+from app.api.routes import stocks, analysis, scanner, watchlist, annotations, notes
 from app.database import init_db, close_db
 
 settings = get_settings()
@@ -35,6 +35,7 @@ app.include_router(analysis.router, prefix="/api/analysis", tags=["analysis"])
 app.include_router(scanner.router, prefix="/api/scanner", tags=["scanner"])
 app.include_router(watchlist.router, prefix="/api/watchlist", tags=["watchlist"])
 app.include_router(annotations.router, prefix="/api/annotations", tags=["annotations"])
+app.include_router(notes.router, prefix="/api/notes", tags=["notes"])
 
 
 @app.on_event("startup")
