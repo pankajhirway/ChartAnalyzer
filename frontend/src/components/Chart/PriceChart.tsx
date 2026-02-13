@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { createChart, ColorType } from 'lightweight-charts';
 import { stockApi } from '../../services/api';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import type { Annotation } from '../../types';
+import { useAnnotations } from '../../hooks/useAnnotations';
+import { useAnnotationStore } from '../../store/annotationStore';
 
 interface PriceChartProps {
   symbol: string;
@@ -20,6 +22,15 @@ export function PriceChart({ symbol, timeframe = '1d', annotations = [], annotat
   const annotationSeriesRef = useRef<Map<number, any>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Auto-save annotations hook
+  const { drawing, handleChartClick, getPreviewAnnotation } = useAnnotations({
+    symbol,
+    enabled: !!symbol,
+  });
+
+  // Get stopDrawing from store for escape key handling
+  const stopDrawing = useAnnotationStore((state) => state.stopDrawing);
 
   const { data: history, error: queryError } = useQuery({
     queryKey: ['history', symbol, timeframe],
@@ -179,6 +190,70 @@ export function PriceChart({ symbol, timeframe = '1d', annotations = [], annotat
     }
   }, [queryError]);
 
+  /**
+   * Handle chart click for annotation drawing
+   * Converts DOM coordinates to chart time/price coordinates
+   */
+  const handleContainerClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    if (!chartRef.current || !candlestickSeriesRef.current) {
+      return;
+    }
+
+    const rect = chartContainerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    // Calculate click position relative to chart container
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    // Convert to chart coordinates
+    const chart = chartRef.current;
+    const timeScale = chart.timeScale();
+    const priceScale = (candlestickSeriesRef.current as any).priceScale();
+
+    // Get the time coordinate
+    const time = timeScale.coordinateToTime(x);
+    if (!time) return;
+
+    // Get the price coordinate
+    const price = priceScale.coordinateToPrice(y);
+    if (price === null || price === undefined) return;
+
+    // Convert time to seconds timestamp (handle number, string, and BusinessDay formats)
+    let timeInSeconds: number;
+    if (typeof time === 'number') {
+      timeInSeconds = Math.floor(time);
+    } else if (typeof time === 'string') {
+      timeInSeconds = Math.floor(new Date(time).getTime() / 1000);
+    } else {
+      // BusinessDay object - has year, month, day properties
+      const businessDay = time as any;
+      if (businessDay.year !== undefined) {
+        timeInSeconds = Math.floor(new Date(businessDay.year, businessDay.month - 1, businessDay.day).getTime() / 1000);
+      } else {
+        timeInSeconds = Math.floor(Date.now() / 1000);
+      }
+    }
+
+    // Handle the click for annotation drawing
+    handleChartClick(timeInSeconds, price);
+  }, [handleChartClick]);
+
+  /**
+   * Handle Escape key to cancel drawing
+   */
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && drawing.isActive) {
+        // Stop drawing
+        stopDrawing();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [drawing.isActive, stopDrawing]);
+
   // Handle annotations - create, update, and remove line series
   useEffect(() => {
     if (!chartRef.current) return;
@@ -186,6 +261,10 @@ export function PriceChart({ symbol, timeframe = '1d', annotations = [], annotat
     const chart = chartRef.current;
     const currentSeries = annotationSeriesRef.current;
     const validAnnotationIds = new Set<number>();
+    const previewId = -1; // Special ID for preview annotation
+
+    // Get preview annotation if drawing is active
+    const previewAnnotation = getPreviewAnnotation();
 
     try {
       // Process each annotation
@@ -226,9 +305,47 @@ export function PriceChart({ symbol, timeframe = '1d', annotations = [], annotat
         }
       });
 
-      // Remove series for annotations that no longer exist
+      // Process preview annotation if drawing
+      if (previewAnnotation && previewAnnotation.x1 !== undefined && previewAnnotation.y1 !== undefined) {
+        const previewSeries = currentSeries.get(previewId);
+        const previewAnnotationData = {
+          id: previewId,
+          symbol,
+          annotation_type: previewAnnotation.annotation_type || 'TRENDLINE',
+          x1: previewAnnotation.x1,
+          y1: previewAnnotation.y1,
+          x2: previewAnnotation.x2,
+          y2: previewAnnotation.y2,
+          color: previewAnnotation.color || '#FF0000',
+          line_style: previewAnnotation.line_style || 'SOLID',
+          line_width: previewAnnotation.line_width || '2',
+          visible: true,
+        } as Annotation;
+
+        if (previewSeries) {
+          updateLineSeries(previewSeries, previewAnnotationData);
+        } else {
+          const newSeries = createAnnotationLineSeries(chart, previewAnnotationData);
+          if (newSeries) {
+            currentSeries.set(previewId, newSeries);
+          }
+        }
+      } else {
+        // Remove preview series if not drawing
+        const previewSeries = currentSeries.get(previewId);
+        if (previewSeries) {
+          try {
+            chart.removeSeries(previewSeries);
+          } catch (e) {
+            // Series already removed
+          }
+          currentSeries.delete(previewId);
+        }
+      }
+
+      // Remove series for annotations that no longer exist (except preview)
       for (const [id, series] of currentSeries) {
-        if (!validAnnotationIds.has(id)) {
+        if (!validAnnotationIds.has(id) && id !== previewId) {
           try {
             chart.removeSeries(series);
           } catch (e) {
@@ -240,7 +357,7 @@ export function PriceChart({ symbol, timeframe = '1d', annotations = [], annotat
     } catch (e: any) {
       console.error('Annotation processing error:', e);
     }
-  }, [annotations, annotationsVisible]);
+  }, [annotations, annotationsVisible, getPreviewAnnotation, drawing.isActive, symbol]);
 
   // Helper function to create a line series for an annotation
   function createAnnotationLineSeries(
@@ -367,7 +484,16 @@ export function PriceChart({ symbol, timeframe = '1d', annotations = [], annotat
           </div>
         </div>
       )}
-      <div ref={chartContainerRef} className="w-full min-h-[400px]" />
+      {drawing.isActive && (
+        <div className="absolute top-2 left-2 z-20 bg-blue-500/20 border border-blue-500/30 px-3 py-1.5 rounded-lg text-xs text-blue-300 backdrop-blur-sm">
+          Drawing: {drawing.tool} - Click to place points, Escape to cancel
+        </div>
+      )}
+      <div
+        ref={chartContainerRef}
+        className="w-full min-h-[400px] cursor-crosshair"
+        onClick={handleContainerClick}
+      />
     </div>
   );
 }
