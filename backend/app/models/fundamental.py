@@ -4,6 +4,10 @@ from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel, Field
+from sqlalchemy import DateTime, Float, String
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.database import Base
 
 
 class FundamentalData(BaseModel):
@@ -32,3 +36,42 @@ class FundamentalData(BaseModel):
                 "updated_at": "2024-01-15T09:15:00"
             }
         }
+
+
+class FundamentalDataCache(Base):
+    """Database model for caching fundamental data with quarterly update tracking.
+
+    This table stores cached fundamental metrics to reduce external API calls.
+    Data is updated quarterly when financial results are announced.
+    """
+
+    __tablename__ = "fundamental_data_cache"
+
+    # Primary key - stock symbol
+    symbol: Mapped[str] = mapped_column(String(50), primary_key=True)
+
+    # Fundamental metrics
+    pe_ratio: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    pb_ratio: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    roe: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    roce: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    debt_to_equity: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    eps_growth: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    revenue_growth: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False
+    )
+
+    def __repr__(self) -> str:
+        return f"<FundamentalDataCache(symbol={self.symbol}, pe_ratio={self.pe_ratio})>"
+
