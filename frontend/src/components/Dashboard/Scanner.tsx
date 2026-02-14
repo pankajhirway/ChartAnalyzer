@@ -1,11 +1,17 @@
-import { useState, useEffect, useRef } from 'react';
-import { Play, ScanLine, History, Clock, Trash2, ChevronDown, Zap, TrendingUp, Activity, Target } from 'lucide-react';
-import { scannerApi } from '../../services/api';
+import { useState, useEffect } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Play, RefreshCw, ScanLine, Zap, History, Clock, Trash2, ChevronDown, Check, Star, Square } from 'lucide-react';
+import { scannerApi, watchlistApi } from '../../services/api';
 import { LoadingSpinner } from '../common/LoadingSpinner';
-import { PresetsPanel, type PresetOption } from './PresetsPanel';
-import { ScannerResults } from './ScannerResults';
 import { useAppStore, type ScanHistoryEntry } from '../../store';
-import type { ScanResult, ScanProgress, ScannerPreset } from '../../types';
+import type { ScanResult, SignalType, ConvictionLevel } from '../../types';
+
+const PRESETS = [
+  { id: 'bullish_breakouts', name: 'Bullish Breakouts', description: 'Stocks breaking out with volume confirmation' },
+  { id: 'stage2_advancing', name: 'Stage 2 Advancing', description: 'Stocks in Weinstein Stage 2 - optimal buy zone' },
+  { id: 'high_conviction', name: 'High Conviction', description: 'Highest confidence buy signals across strategies' },
+  { id: 'vcp_setups', name: 'VCP Setups', description: 'Minervini-style volatility contraction patterns' },
+];
 
 const UNIVERSES = [
   { id: 'nifty50', name: 'Nifty 50' },
@@ -15,40 +21,13 @@ const UNIVERSES = [
   { id: 'fnO', name: 'F&O Segment' },
 ];
 
-// Map preset IDs to icons for visual display
-const PRESET_ICONS: Record<string, React.ReactNode> = {
-  'minervini_breakouts': <TrendingUp className="w-5 h-5" />,
-  'stage2_stocks': <Activity className="w-5 h-5" />,
-  'vcp_setups': <Zap className="w-5 h-5" />,
-  'high_composite_score': <Target className="w-5 h-5" />,
-  'volume_breakouts': <TrendingUp className="w-5 h-5" />,
-  'bullish_breakouts': <TrendingUp className="w-5 h-5" />,
-  'stage2_advancing': <Activity className="w-5 h-5" />,
-  'high_conviction': <Target className="w-5 h-5" />,
-  '52w_high_vol': <Zap className="w-5 h-5" />,
-};
-
 export function Scanner() {
+  const queryClient = useQueryClient();
   const [selectedUniverse, setSelectedUniverse] = useState('nifty50');
-  const [selectedPreset, setSelectedPreset] = useState<string>('bullish_breakouts');
+  const [selectedPreset, setSelectedPreset] = useState('bullish_breakouts');
   const [isScanning, setIsScanning] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const [presets, setPresets] = useState<PresetOption[]>([]);
-  const [presetsData, setPresetsData] = useState<Record<string, ScannerPreset>>({});
-  const [isLoadingPresets, setIsLoadingPresets] = useState(true);
-  const [scanProgress, setScanProgress] = useState<ScanProgress | null>(null);
-  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [showFundamentalFilters, setShowFundamentalFilters] = useState(false);
-
-  // Fundamental filter states
-  const [peMin, setPeMin] = useState<number | undefined>(undefined);
-  const [peMax, setPeMax] = useState<number | undefined>(undefined);
-  const [pbMax, setPbMax] = useState<number | undefined>(undefined);
-  const [roeMin, setRoeMin] = useState<number | undefined>(undefined);
-  const [roceMin, setRoceMin] = useState<number | undefined>(undefined);
-  const [debtToEquityMax, setDebtToEquityMax] = useState<number | undefined>(undefined);
-  const [epsGrowthMin, setEpsGrowthMin] = useState<number | undefined>(undefined);
-  const [revenueGrowthMin, setRevenueGrowthMin] = useState<number | undefined>(undefined);
+  const [selectedSymbols, setSelectedSymbols] = useState<Set<string>>(new Set());
 
   // Get store actions and state
   const {
@@ -65,31 +44,21 @@ export function Scanner() {
     loadFromHistory,
   } = useAppStore();
 
-  // Fetch presets from API on mount
-  useEffect(() => {
-    const fetchPresets = async () => {
-      try {
-        const data = await scannerApi.getPresets();
-        // Store full presets data for filter access
-        setPresetsData(data);
-        // Transform API presets to PresetOption format with icons
-        const transformedPresets: PresetOption[] = Object.entries(data).map(([id, preset]: [string, any]) => ({
-          id,
-          name: preset.name,
-          description: preset.description,
-          strategy_rationale: preset.strategy_rationale,
-          icon: PRESET_ICONS[id] || <Zap className="w-5 h-5" />,
-        }));
-        setPresets(transformedPresets);
-      } catch (error) {
-        console.error('Failed to load presets:', error);
-      } finally {
-        setIsLoadingPresets(false);
-      }
-    };
+  // Bulk add to watchlist mutation
+  const bulkAddMutation = useMutation({
+    mutationFn: ({ symbols, notes, tags }: { symbols: string[]; notes?: string; tags?: string[] }) =>
+      watchlistApi.bulkAdd(symbols, notes, tags),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['watchlist'] });
+      setSelectedSymbols(new Set());
+    },
+  });
 
-    fetchPresets();
-  }, []);
+  const handleBulkAddToWatchlist = () => {
+    if (selectedSymbols.size === 0) return;
+    const symbols = Array.from(selectedSymbols);
+    bulkAddMutation.mutate({ symbols });
+  };
 
   // Initialize from last used parameters
   useEffect(() => {
@@ -107,95 +76,32 @@ export function Scanner() {
     }
   }, [selectedUniverse, selectedPreset]);
 
-  // Cleanup polling on unmount
+  // Clear selection when scan results change
   useEffect(() => {
-    return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-      }
-    };
-  }, []);
-
-  // Poll scan progress
-  const startProgressPolling = (scanId: string) => {
-    setScanProgress(null);
-
-    pollingIntervalRef.current = setInterval(async () => {
-      try {
-        const progress = await scannerApi.getScanProgress(scanId);
-        setScanProgress(progress);
-
-        // Stop polling if scan is complete or failed
-        if (progress.status === 'completed' || progress.status === 'failed') {
-          if (pollingIntervalRef.current) {
-            clearInterval(pollingIntervalRef.current);
-            pollingIntervalRef.current = null;
-          }
-        }
-      } catch {
-        // If polling fails, just continue - the scan request will complete
-      }
-    }, 500); // Poll every 500ms
-  };
+    setSelectedSymbols(new Set());
+  }, [scanResults]);
 
   const handleScan = async () => {
     setIsScanning(true);
     setLastScanParams(selectedUniverse, selectedPreset);
-    setScanProgress(null);
-
-    // Generate scan ID for progress tracking
-    const scanId = `scan_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-
-    // Start progress polling
-    startProgressPolling(scanId);
 
     try {
       let results: ScanResult[];
 
-      // Try specific preset APIs first, fall back to generic scan
-      // Build fundamental filters
-      const fundamentalFilters: Record<string, number> = {};
-      if (peMin !== undefined) fundamentalFilters.pe_min = peMin;
-      if (peMax !== undefined) fundamentalFilters.pe_max = peMax;
-      if (pbMax !== undefined) fundamentalFilters.pb_max = pbMax;
-      if (roeMin !== undefined) fundamentalFilters.roe_min = roeMin;
-      if (roceMin !== undefined) fundamentalFilters.roce_min = roceMin;
-      if (debtToEquityMax !== undefined) fundamentalFilters.debt_to_equity_max = debtToEquityMax;
-      if (epsGrowthMin !== undefined) fundamentalFilters.eps_growth_min = epsGrowthMin;
-      if (revenueGrowthMin !== undefined) fundamentalFilters.revenue_growth_min = revenueGrowthMin;
-
       switch (selectedPreset) {
         case 'bullish_breakouts':
-        case 'minervini_breakouts':
-          ({ results } = await scannerApi.scanBreakouts(selectedUniverse, 1.5, scanId));
+          results = await scannerApi.scanBreakouts(selectedUniverse);
           break;
         case 'stage2_advancing':
-        case 'stage2_stocks':
-          ({ results } = await scannerApi.scanStage2(selectedUniverse, scanId));
+          results = await scannerApi.scanStage2(selectedUniverse);
           break;
         case 'vcp_setups':
-          ({ results } = await scannerApi.scanVcp(selectedUniverse, scanId));
-          break;
-        case 'high_composite_score':
-        case 'volume_breakouts':
-          // Use preset's filter criteria from API
-          const presetFilter = presetsData[selectedPreset]?.filter;
-          ({ results } = await scannerApi.runScan({
-            universe: selectedUniverse,
-            min_composite_score: presetFilter?.min_composite_score || 60,
-            signal: presetFilter?.signal,
-            min_conviction: presetFilter?.min_conviction,
-            min_volume_ratio: presetFilter?.min_volume_ratio,
-            trend: presetFilter?.trend,
-            weinstein_stage: presetFilter?.weinstein_stage,
-          }, scanId));
+          results = await scannerApi.scanVcp(selectedUniverse);
           break;
         default:
-          ({ results } = await scannerApi.runScan({
+          results = await scannerApi.runScan({
             universe: selectedUniverse,
             min_composite_score: 50,
-          }, scanId));
-            ...fundamentalFilters,
           });
       }
 
@@ -210,17 +116,9 @@ export function Scanner() {
         results,
         resultCount: results.length,
       });
-
-      // Mark progress as complete
-      setScanProgress(prev => prev ? { ...prev, status: 'completed' as const, current: prev?.total || 0 } : null);
     } catch (error) {
-      setScanProgress(prev => prev ? { ...prev, status: 'failed' as const, error: 'Scan failed' } : null);
+      console.error('Scan failed:', error);
     } finally {
-      // Stop polling
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
-      }
       setIsScanning(false);
     }
   };
@@ -248,10 +146,38 @@ export function Scanner() {
   };
 
   const getUniverseName = (id: string) => UNIVERSES.find(u => u.id === id)?.name || id;
-  const getPresetName = (id: string) => presets.find(p => p.id === id)?.name || id;
+  const getPresetName = (id: string) => PRESETS.find(p => p.id === id)?.name || id;
 
   const cachedScan = getCachedScan(selectedUniverse, selectedPreset);
   const hasCachedResults = cachedScan && cachedScan.results.length > 0;
+
+  // Selection handlers
+  const handleToggleSelect = (symbol: string) => {
+    setSelectedSymbols((prev) => {
+      const next = new Set(prev);
+      if (next.has(symbol)) {
+        next.delete(symbol);
+      } else {
+        next.add(symbol);
+      }
+      return next;
+    });
+  };
+
+  const handleToggleSelectAll = () => {
+    if (selectedSymbols.size === scanResults.length && scanResults.length > 0) {
+      setSelectedSymbols(new Set());
+    } else {
+      setSelectedSymbols(new Set(scanResults.map((r) => r.symbol)));
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedSymbols(new Set());
+  };
+
+  const allSelected = scanResults.length > 0 && selectedSymbols.size === scanResults.length;
+  const someSelected = selectedSymbols.size > 0 && selectedSymbols.size < scanResults.length;
 
   return (
     <div className="space-y-6 animate-fade-in-up">
@@ -270,7 +196,7 @@ export function Scanner() {
 
       {/* Scan Controls */}
       <div className="card" style={{ animationDelay: '75ms' }}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Universe Selection */}
           <div>
             <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">
@@ -289,11 +215,29 @@ export function Scanner() {
             </select>
           </div>
 
-          {/* Scan Button with History */}
+          {/* Preset Selection */}
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">
+              Scan Type
+            </label>
+            <select
+              value={selectedPreset}
+              onChange={(e) => setSelectedPreset(e.target.value)}
+              className="w-full bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 transition-all"
+            >
+              {PRESETS.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Scan Button */}
           <div className="flex items-end gap-2">
             <button
               onClick={handleScan}
-              disabled={isScanning || isLoadingPresets}
+              disabled={isScanning}
               className="flex-1 btn btn-primary flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isScanning ? (
@@ -319,187 +263,23 @@ export function Scanner() {
           </div>
         </div>
 
-        {/* Cached results indicator */}
-        {hasCachedResults && !isScanning && (
-          <div className="flex items-center justify-end gap-1 text-xs text-slate-500">
-            <Clock className="w-3 h-3" />
-            Cached: {formatTimestamp(cachedScan.timestamp)}
+        {/* Preset Description */}
+        <div className="mt-4 p-3 rounded-lg bg-blue-500/8 border border-blue-500/10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Zap className="w-3.5 h-3.5 text-blue-400" />
+              <span className="text-sm text-blue-300">
+                {PRESETS.find((p) => p.id === selectedPreset)?.description}
+              </span>
+            </div>
+            {hasCachedResults && !isScanning && (
+              <span className="text-xs text-slate-500 flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                Cached: {formatTimestamp(cachedScan.timestamp)}
+              </span>
+            )}
           </div>
-        )}
-      </div>
-
-      {/* Presets Panel */}
-      {isLoadingPresets ? (
-        <div className="card flex justify-center py-8">
-          <LoadingSpinner size="sm" />
         </div>
-      ) : (
-        <PresetsPanel
-          presets={presets}
-          selectedPreset={selectedPreset}
-          onPresetChange={setSelectedPreset}
-          title="Scan Presets"
-          description="Select a preset configuration for your scan"
-        />
-      )}
-      {/* Fundamental Filters Section */}
-      <div className="card" style={{ animationDelay: '100ms' }}>
-        <button
-          onClick={() => setShowFundamentalFilters(!showFundamentalFilters)}
-          className="w-full flex items-center justify-between p-3 hover:bg-slate-800/30 rounded-lg transition-colors"
-        >
-          <div className="flex items-center space-x-2.5">
-            <Filter className="w-4 h-4 text-emerald-400" />
-            <h3 className="text-sm font-medium text-slate-200">
-              Fundamental Filters
-            </h3>
-          </div>
-          {showFundamentalFilters ? (
-            <ChevronUp className="w-4 h-4 text-slate-500" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-slate-500" />
-          )}
-        </button>
-
-        {showFundamentalFilters && (
-          <div className="mt-4 pt-4 border-t border-slate-700/50">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* P/E Ratio Range */}
-              <div className="space-y-2">
-                <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider">
-                  P/E Ratio Range
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    value={peMin ?? ''}
-                    onChange={(e) => setPeMin(e.target.value === '' ? undefined : Number(e.target.value))}
-                    placeholder="Min"
-                    className="w-full bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-all"
-                  />
-                  <span className="text-slate-500 text-xs">-</span>
-                  <input
-                    type="number"
-                    value={peMax ?? ''}
-                    onChange={(e) => setPeMax(e.target.value === '' ? undefined : Number(e.target.value))}
-                    placeholder="Max"
-                    className="w-full bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* P/B Ratio Max */}
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">
-                  Max P/B Ratio
-                </label>
-                <input
-                  type="number"
-                  value={pbMax ?? ''}
-                  onChange={(e) => setPbMax(e.target.value === '' ? undefined : Number(e.target.value))}
-                  placeholder="Max P/B"
-                  className="w-full bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-all"
-                />
-              </div>
-
-              {/* ROE Minimum */}
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">
-                  Min ROE (%)
-                </label>
-                <input
-                  type="number"
-                  value={roeMin ?? ''}
-                  onChange={(e) => setRoeMin(e.target.value === '' ? undefined : Number(e.target.value))}
-                  placeholder="Min ROE"
-                  className="w-full bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-all"
-                />
-              </div>
-
-              {/* ROCE Minimum */}
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">
-                  Min ROCE (%)
-                </label>
-                <input
-                  type="number"
-                  value={roceMin ?? ''}
-                  onChange={(e) => setRoceMin(e.target.value === '' ? undefined : Number(e.target.value))}
-                  placeholder="Min ROCE"
-                  className="w-full bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-all"
-                />
-              </div>
-
-              {/* Debt to Equity Max */}
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">
-                  Max Debt/Equity
-                </label>
-                <input
-                  type="number"
-                  value={debtToEquityMax ?? ''}
-                  onChange={(e) => setDebtToEquityMax(e.target.value === '' ? undefined : Number(e.target.value))}
-                  placeholder="Max D/E"
-                  className="w-full bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-all"
-                />
-              </div>
-
-              {/* EPS Growth Minimum */}
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">
-                  Min EPS Growth (%)
-                </label>
-                <input
-                  type="number"
-                  value={epsGrowthMin ?? ''}
-                  onChange={(e) => setEpsGrowthMin(e.target.value === '' ? undefined : Number(e.target.value))}
-                  placeholder="Min EPS Growth"
-                  className="w-full bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-all"
-                />
-              </div>
-
-              {/* Revenue Growth Minimum */}
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">
-                  Min Revenue Growth (%)
-                </label>
-                <input
-                  type="number"
-                  value={revenueGrowthMin ?? ''}
-                  onChange={(e) => setRevenueGrowthMin(e.target.value === '' ? undefined : Number(e.target.value))}
-                  placeholder="Min Rev Growth"
-                  className="w-full bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-all"
-                />
-              </div>
-
-              {/* Clear Filters Button */}
-              <div className="flex items-end">
-                <button
-                  onClick={() => {
-                    setPeMin(undefined);
-                    setPeMax(undefined);
-                    setPbMax(undefined);
-                    setRoeMin(undefined);
-                    setRoceMin(undefined);
-                    setDebtToEquityMax(undefined);
-                    setEpsGrowthMin(undefined);
-                    setRevenueGrowthMin(undefined);
-                  }}
-                  className="w-full px-4 py-2 text-sm text-slate-400 border border-slate-700/50 rounded-lg hover:bg-slate-800/60 hover:text-slate-300 transition-all"
-                >
-                  Clear Filters
-                </button>
-              </div>
-            </div>
-
-            {/* Filter Info */}
-            <div className="mt-3 p-2.5 rounded-md bg-emerald-500/8 border border-emerald-500/10">
-              <p className="text-xs text-emerald-300">
-                📊 Apply fundamental filters to find fundamentally strong stocks. Leave fields empty to ignore a filter.
-              </p>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Scan History Panel */}
@@ -548,48 +328,176 @@ export function Scanner() {
       {/* Results */}
       {isScanning ? (
         <div className="card flex justify-center py-16">
-          <div className="text-center w-full max-w-md">
+          <div className="text-center">
             <LoadingSpinner size="lg" className="mx-auto mb-4" />
-            <p className="text-slate-400 text-sm mb-4">Scanning market...</p>
-
-            {/* Progress Bar */}
-            {scanProgress && (
-              <div className="px-4">
-                <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
-                  <span>Progress</span>
-                  <span>
-                    {scanProgress.current} of {scanProgress.total} stocks
-                    {scanProgress.results_found > 0 && ` • ${scanProgress.results_found} found`}
-                  </span>
-                </div>
-                <div className="w-full bg-slate-700/50 rounded-full h-2.5 overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full transition-all duration-300 ease-out"
-                    style={{ width: `${scanProgress.total > 0 ? (scanProgress.current / scanProgress.total) * 100 : 0}%` }}
-                  />
-                </div>
-                {scanProgress.status === 'completed' && (
-                  <p className="text-slate-500 text-xs mt-2">Finalizing results...</p>
-                )}
-              </div>
-            )}
-
-            {!scanProgress && (
-              <p className="text-slate-600 text-xs">This may take a few seconds</p>
-            )}
+            <p className="text-slate-400 text-sm">Scanning market...</p>
+            <p className="text-slate-600 text-xs mt-1">This may take a few seconds</p>
           </div>
         </div>
       ) : scanResults && scanResults.length > 0 ? (
-        <ScannerResults
-          results={scanResults}
-          onRefresh={handleScan}
-          isRefreshing={isScanning}
-        />
+        <div className="card animate-fade-in-up" style={{ animationDelay: '150ms' }}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="card-header mb-0">
+              Scan Results{' '}
+              <span className="text-slate-500 font-normal">({scanResults.length})</span>
+            </h3>
+            <button
+              onClick={handleScan}
+              className="p-2 hover:bg-slate-800/60 rounded-lg transition-colors"
+              title="Refresh scan"
+            >
+              <RefreshCw className="w-4 h-4 text-slate-500 hover:text-slate-300 transition-colors" />
+            </button>
+          </div>
+
+          {/* Bulk Actions Bar */}
+          {selectedSymbols.size > 0 && (
+            <div className="mb-4 p-3 rounded-lg bg-blue-500/8 border border-blue-500/20 flex items-center justify-between animate-fade-in-down">
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-blue-300 font-medium">
+                  {selectedSymbols.size} {selectedSymbols.size === 1 ? 'stock' : 'stocks'} selected
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleBulkAddToWatchlist}
+                  disabled={bulkAddMutation.isPending}
+                  className="btn btn-primary btn-sm flex items-center gap-2"
+                >
+                  {bulkAddMutation.isPending ? (
+                    <LoadingSpinner size="sm" />
+                  ) : (
+                    <Star className="w-3.5 h-3.5" />
+                  )}
+                  Add to Watchlist
+                </button>
+                <button
+                  onClick={handleClearSelection}
+                  className="px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 rounded-lg transition-colors"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="overflow-x-auto -mx-5 px-5">
+            <table className="w-full">
+              <thead>
+                <tr className="text-left text-[10px] font-medium text-slate-500 uppercase tracking-wider border-b border-slate-800/60">
+                  <th className="pb-3 w-10">
+                    <button
+                      onClick={handleToggleSelectAll}
+                      className="p-1.5 hover:bg-slate-800/60 rounded-md transition-colors"
+                      title={allSelected ? 'Deselect all' : 'Select all'}
+                    >
+                      {allSelected ? (
+                        <Check className="w-3.5 h-3.5 text-blue-400" />
+                      ) : someSelected ? (
+                        <div className="relative w-3.5 h-3.5">
+                          <Square className="w-3.5 h-3.5 text-blue-400 absolute" />
+                          <div className="absolute inset-0.5 bg-blue-400 rounded-sm" />
+                        </div>
+                      ) : (
+                        <div className="w-3.5 h-3.5 border-2 border-slate-600 rounded-sm" />
+                      )}
+                    </button>
+                  </th>
+                  <th className="pb-3">Symbol</th>
+                  <th className="pb-3">Price</th>
+                  <th className="pb-3">Score</th>
+                  <th className="pb-3">Signal</th>
+                  <th className="pb-3">Stage</th>
+                  <th className="pb-3">Patterns</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/40">
+                {scanResults.map((result: ScanResult) => {
+                  const isSelected = selectedSymbols.has(result.symbol);
+                  return (
+                    <tr
+                      key={result.symbol}
+                      className={`group hover:bg-slate-800/30 cursor-pointer transition-colors duration-150 ${
+                        isSelected ? 'bg-blue-500/5' : ''
+                      }`}
+                      onClick={() => window.location.href = `/stock/${result.symbol}`}
+                    >
+                      <td className="py-3.5">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleSelect(result.symbol);
+                          }}
+                          className={`p-1.5 rounded-md transition-colors ${
+                            isSelected
+                              ? 'bg-blue-500/20 hover:bg-blue-500/30'
+                              : 'hover:bg-slate-800/60'
+                          }`}
+                          title={isSelected ? 'Deselect' : 'Select'}
+                        >
+                          {isSelected ? (
+                            <Check className="w-3.5 h-3.5 text-blue-400" />
+                          ) : (
+                            <div className="w-3.5 h-3.5 border-2 border-slate-600 rounded-sm" />
+                          )}
+                        </button>
+                      </td>
+                      <td className="py-3.5">
+                        <div className="font-medium text-sm text-slate-200 group-hover:text-blue-400 transition-colors">
+                          {result.symbol}
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          {result.company_name}
+                        </div>
+                      </td>
+                      <td className="py-3.5">
+                        <span className="font-mono-num text-sm text-slate-300">
+                          ₹{result.current_price.toLocaleString('en-IN')}
+                        </span>
+                      </td>
+                      <td className="py-3.5">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-16 h-1.5 bg-slate-800/60 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all duration-700 ${result.composite_score >= 70
+                                ? 'bg-gradient-to-r from-emerald-500 to-emerald-400'
+                                : result.composite_score >= 50
+                                  ? 'bg-gradient-to-r from-amber-500 to-amber-400'
+                                  : 'bg-gradient-to-r from-red-500 to-red-400'
+                                }`}
+                              style={{ width: `${result.composite_score}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-semibold font-mono-num text-slate-400">
+                            {result.composite_score.toFixed(0)}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-3.5">
+                        <SignalBadge signal={result.signal} conviction={result.conviction} />
+                      </td>
+                      <td className="py-3.5">
+                        <StageBadge stage={result.weinstein_stage} />
+                      </td>
+                      <td className="py-3.5">
+                        <div className="text-xs text-slate-500">
+                          {result.patterns.length > 0
+                            ? result.patterns.slice(0, 2).join(', ')
+                            : '—'}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       ) : scanResults && scanResults.length === 0 ? (
         <div className="card animate-fade-in-up" style={{ animationDelay: '150ms' }}>
           <div className="text-center py-12 text-slate-500">
             <ScanLine className="w-10 h-10 text-slate-700 mx-auto mb-3" />
-            <p className="text-sm">No stocks found matching criteria</p>
+            <p className="text-sm">No stocks found matching the criteria</p>
             <p className="text-xs text-slate-600 mt-2">Try a different universe or scan type</p>
           </div>
         </div>
@@ -605,5 +513,36 @@ export function Scanner() {
         </div>
       )}
     </div>
+  );
+}
+
+function SignalBadge({ signal, conviction }: { signal: SignalType; conviction: ConvictionLevel }) {
+  const colors: Record<SignalType, string> = {
+    BUY: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20',
+    SELL: 'bg-red-500/15 text-red-400 border-red-500/20',
+    HOLD: 'bg-amber-500/15 text-amber-400 border-amber-500/20',
+    AVOID: 'bg-slate-500/15 text-slate-400 border-slate-500/20',
+  };
+
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold border ${colors[signal]}`}>
+      {signal}
+      {conviction === 'HIGH' && ' ⭐'}
+    </span>
+  );
+}
+
+function StageBadge({ stage }: { stage: number }) {
+  const colors: Record<number, string> = {
+    1: 'bg-slate-500/15 text-slate-400 border-slate-500/20',
+    2: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20',
+    3: 'bg-amber-500/15 text-amber-400 border-amber-500/20',
+    4: 'bg-red-500/15 text-red-400 border-red-500/20',
+  };
+
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold border ${colors[stage]}`}>
+      S{stage}
+    </span>
   );
 }

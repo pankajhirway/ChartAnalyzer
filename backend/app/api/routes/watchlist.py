@@ -34,6 +34,24 @@ class WatchlistAddRequest(BaseModel):
     tags: list[str] = []
 
 
+class WatchlistBulkAddRequest(BaseModel):
+    """Request to add multiple items to watchlist."""
+    symbols: list[str]
+    notes: Optional[str] = None
+    tags: list[str] = []
+
+
+class WatchlistBulkAddResponse(BaseModel):
+    """Response from bulk add operation."""
+    added: list[WatchlistItem]
+    count: int
+
+
+class WatchlistBulkRemoveRequest(BaseModel):
+    """Request to remove multiple items from watchlist."""
+    symbols: list[str]
+
+
 class WatchlistResponse(BaseModel):
     """Watchlist response model."""
     items: list[WatchlistItem]
@@ -146,6 +164,41 @@ async def analyze_watchlist():
     }
 
 
+@router.post("/bulk-add", response_model=WatchlistBulkAddResponse)
+async def bulk_add_to_watchlist(request: WatchlistBulkAddRequest):
+    """Add multiple stocks to the watchlist."""
+    if len(request.symbols) > 50:
+        raise HTTPException(status_code=400, detail="Maximum 50 symbols at a time")
+
+    added_items = []
+
+    for symbol in request.symbols:
+        symbol = symbol.upper()
+
+        # Skip if already in watchlist
+        if symbol in _default_watchlist:
+            continue
+
+        # Verify stock exists
+        stock_info = await data_provider.get_stock_info(symbol)
+        if not stock_info:
+            continue
+
+        # Add to watchlist
+        item = WatchlistItem(
+            symbol=symbol,
+            company_name=stock_info.company_name,
+            added_at=datetime.now(),
+            notes=request.notes,
+            tags=request.tags,
+        )
+
+        _default_watchlist[symbol] = item.model_dump()
+        added_items.append(item)
+
+    return WatchlistBulkAddResponse(added=added_items, count=len(added_items))
+
+
 @router.patch("/{symbol}")
 async def update_watchlist_item(
     symbol: str,
@@ -168,6 +221,27 @@ async def update_watchlist_item(
     _default_watchlist[symbol] = item
 
     return WatchlistItem(**item)
+
+
+@router.post("/bulk-remove")
+async def bulk_remove_from_watchlist(request: WatchlistBulkRemoveRequest):
+    """Remove multiple stocks from the watchlist."""
+    if len(request.symbols) > 50:
+        raise HTTPException(status_code=400, detail="Maximum 50 symbols at a time")
+
+    removed_symbols = []
+
+    for symbol in request.symbols:
+        symbol = symbol.upper()
+
+        if symbol in _default_watchlist:
+            del _default_watchlist[symbol]
+            removed_symbols.append(symbol)
+
+    return {
+        "removed": removed_symbols,
+        "count": len(removed_symbols),
+    }
 
 
 @router.post("/clear")

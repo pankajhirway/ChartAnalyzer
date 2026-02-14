@@ -20,6 +20,14 @@ export interface CachedScan {
   timestamp: string;
 }
 
+// Multi-timeframe layout configuration
+export interface MTFLayout {
+  id: string;
+  name: string;
+  timeframes: string[];
+  createdAt: string;
+}
+
 interface AppState {
   // Current analysis
   currentAnalysis: AnalysisResult | null;
@@ -55,6 +63,14 @@ interface AppState {
   addToScanHistory: (entry: Omit<ScanHistoryEntry, 'id'>) => void;
   clearScanHistory: () => void;
   loadFromHistory: (id: string) => void;
+
+  // Multi-timeframe layouts
+  mtfLayouts: MTFLayout[];
+  currentLayout: string | null;
+  setCurrentLayout: (layoutId: string | null) => void;
+  saveLayout: (name: string, timeframes: string[]) => void;
+  deleteLayout: (layoutId: string) => void;
+  getLayout: (layoutId: string) => MTFLayout | null;
 
   // UI state
   isLoading: boolean;
@@ -155,6 +171,31 @@ export const useAppStore = create<AppState>()(
         }
       },
 
+      // Multi-timeframe layouts
+      mtfLayouts: [],
+      currentLayout: null,
+      setCurrentLayout: (layoutId) => set({ currentLayout: layoutId }),
+      saveLayout: (name, timeframes) => {
+        const newLayout: MTFLayout = {
+          id: `mtf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          name,
+          timeframes,
+          createdAt: new Date().toISOString(),
+        };
+        set((state) => ({
+          mtfLayouts: [...state.mtfLayouts, newLayout],
+          currentLayout: newLayout.id,
+        }));
+      },
+      deleteLayout: (layoutId) =>
+        set((state) => ({
+          mtfLayouts: state.mtfLayouts.filter((l) => l.id !== layoutId),
+          currentLayout: state.currentLayout === layoutId ? null : state.currentLayout,
+        })),
+      getLayout: (layoutId) => {
+        return get().mtfLayouts.find((l) => l.id === layoutId) || null;
+      },
+
       // UI state
       isLoading: false,
       setIsLoading: (loading) => set({ isLoading: loading }),
@@ -171,6 +212,8 @@ export const useAppStore = create<AppState>()(
         scanHistory: state.scanHistory,
         lastUniverse: state.lastUniverse,
         lastScanType: state.lastScanType,
+        mtfLayouts: state.mtfLayouts,
+        currentLayout: state.currentLayout,
       }),
     }
   )

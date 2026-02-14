@@ -3,13 +3,17 @@
 from fastapi import APIRouter, HTTPException, Query
 
 from app.core.yfinance_provider import YFinanceProvider
-from app.models.stock import Stock, StockQuote, StockSearchResult, PriceDataResponse
-from app.models.fundamental import FundamentalData, FundamentalScore
-from app.services.fundamental_scorer import FundamentalScorer
+from app.models.stock import (
+    Stock,
+    StockQuote,
+    StockSearchResult,
+    PriceDataResponse,
+    BatchHistoryRequest,
+    BatchHistoryResponse,
+)
 
 router = APIRouter()
 data_provider = YFinanceProvider()
-scorer = FundamentalScorer()
 
 
 @router.get("/search", response_model=list[StockSearchResult])
@@ -79,32 +83,38 @@ async def get_batch_quotes(symbols: list[str]):
     return quotes
 
 
-@router.get("/{symbol}/fundamentals", response_model=FundamentalData)
-async def get_stock_fundamentals(symbol: str):
-    """Get fundamental metrics for a stock."""
-    fundamentals = await data_provider.get_fundamentals(symbol)
-    if not fundamentals:
-        raise HTTPException(status_code=404, detail="Fundamental data not available")
-    return fundamentals
+@router.post("/{symbol}/history/batch", response_model=BatchHistoryResponse)
+async def get_batch_stock_history(
+    symbol: str,
+    request: BatchHistoryRequest,
+):
+    """Get historical price data for multiple timeframes."""
+    from datetime import datetime, timedelta
 
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=request.days)
 
-@router.post("/{symbol}/fundamentals/refresh", response_model=FundamentalData)
-async def refresh_stock_fundamentals(symbol: str):
-    """Force refresh fundamental metrics from source."""
-    fundamentals = await data_provider.refresh_fundamentals(symbol)
-    if not fundamentals:
-        raise HTTPException(status_code=404, detail="Fundamental data not available")
-    return fundamentals
+    result_data = {}
 
+    for timeframe in request.timeframes:
+        data = await data_provider.get_historical_data(
+            symbol=symbol,
+            start_date=start_date,
+            end_date=end_date,
+            timeframe=timeframe,
+        )
 
-@router.get("/{symbol}/fundamentals/score", response_model=FundamentalScore)
-async def get_stock_fundamental_score(symbol: str):
-    """Get fundamental score for a stock."""
-    fundamentals = await data_provider.get_fundamentals(symbol)
-    if not fundamentals:
-        raise HTTPException(status_code=404, detail="Fundamental data not available")
+        result_data[timeframe] = PriceDataResponse(
+            symbol=symbol.upper(),
+            timeframe=timeframe,
+            data=data,
+        )
 
-    score = scorer.score(fundamentals)
-    if not score:
-        raise HTTPException(status_code=404, detail="Insufficient data for scoring")
-    return score
+    if not result_data:
+        raise HTTPException(status_code=404, detail="Historical data not available")
+
+    return BatchHistoryResponse(
+        symbol=symbol.upper(),
+        days=request.days,
+        data=result_data,
+    )

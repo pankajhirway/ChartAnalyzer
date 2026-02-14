@@ -8,16 +8,7 @@ import type {
   ScanResult,
   WatchlistItem,
   ScanFilter,
-  ScannerPreset,
-  ScanProgress,
-  FundamentalData,
-  FundamentalScore,
 } from '../types';
-
-// Helper to generate a UUID for scan tracking
-function generateScanId(): string {
-  return `scan_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-}
 
 const api = axios.create({
   baseURL: '/api',
@@ -103,12 +94,9 @@ export const analysisApi = {
 
 // Scanner endpoints
 export const scannerApi = {
-  runScan: async (filter: ScanFilter, scanId?: string): Promise<{ results: ScanResult[]; scanId: string }> => {
-    const id = scanId || generateScanId();
-    const { data, headers } = await api.post(`/scanner/run`, filter, {
-      params: { scan_id: id },
-    });
-    return { results: data, scanId: headers['x-scan-id'] || id };
+  runScan: async (filter: ScanFilter): Promise<ScanResult[]> => {
+    const { data } = await api.post(`/scanner/run`, filter);
+    return data;
   },
 
   getPresets: async () => {
@@ -116,38 +104,25 @@ export const scannerApi = {
     return data;
   },
 
-  getEnhancedPresets: async (): Promise<Record<string, ScannerPreset>> => {
-    const { data } = await api.get(`/scanner/presets`);
-    return data;
-  },
-
-  scanBreakouts: async (universe = 'nifty50', minVolumeRatio = 1.5, scanId?: string): Promise<{ results: ScanResult[]; scanId: string }> => {
-    const id = scanId || generateScanId();
-    const { data, headers } = await api.get(`/scanner/breakouts`, {
-      params: { universe, min_volume_ratio: minVolumeRatio, scan_id: id },
+  scanBreakouts: async (universe = 'nifty50', minVolumeRatio = 1.5) => {
+    const { data } = await api.get(`/scanner/breakouts`, {
+      params: { universe, min_volume_ratio: minVolumeRatio },
     });
-    return { results: data, scanId: headers['x-scan-id'] || id };
+    return data as ScanResult[];
   },
 
-  scanStage2: async (universe = 'nifty200', scanId?: string): Promise<{ results: ScanResult[]; scanId: string }> => {
-    const id = scanId || generateScanId();
-    const { data, headers } = await api.get(`/scanner/stage2`, {
-      params: { universe, scan_id: id },
+  scanStage2: async (universe = 'nifty200') => {
+    const { data } = await api.get(`/scanner/stage2`, {
+      params: { universe },
     });
-    return { results: data, scanId: headers['x-scan-id'] || id };
+    return data as ScanResult[];
   },
 
-  scanVcp: async (universe = 'nifty200', scanId?: string): Promise<{ results: ScanResult[]; scanId: string }> => {
-    const id = scanId || generateScanId();
-    const { data, headers } = await api.get(`/scanner/vcp-setups`, {
-      params: { universe, scan_id: id },
+  scanVcp: async (universe = 'nifty200') => {
+    const { data } = await api.get(`/scanner/vcp-setups`, {
+      params: { universe },
     });
-    return { results: data, scanId: headers['x-scan-id'] || id };
-  },
-
-  getScanProgress: async (scanId: string): Promise<ScanProgress> => {
-    const { data } = await api.get(`/scanner/progress/${scanId}`);
-    return data;
+    return data as ScanResult[];
   },
 
   getUniverses: async () => {
@@ -192,23 +167,15 @@ export const watchlistApi = {
     const { data } = await api.post(`/watchlist/clear`);
     return data;
   },
-};
 
-// Fundamentals endpoints
-export const fundamentalsApi = {
-  getFundamentals: async (symbol: string): Promise<FundamentalData> => {
-    const { data } = await api.get(`/stocks/${symbol}/fundamentals`);
-    return data;
+  bulkAdd: async (symbols: string[], notes?: string, tags: string[] = []) => {
+    const { data } = await api.post(`/watchlist/bulk-add`, { symbols, notes, tags });
+    return data as { added: WatchlistItem[]; count: number };
   },
 
-  getFundamentalScore: async (symbol: string): Promise<FundamentalScore> => {
-    const { data } = await api.get(`/stocks/${symbol}/fundamentals/score`);
-    return data;
-  },
-
-  refreshFundamentals: async (symbol: string): Promise<FundamentalData> => {
-    const { data } = await api.post(`/stocks/${symbol}/fundamentals/refresh`);
-    return data;
+  bulkRemove: async (symbols: string[]) => {
+    const { data } = await api.post(`/watchlist/bulk-remove`, { symbols });
+    return data as { removed: string[]; count: number };
   },
 };
 

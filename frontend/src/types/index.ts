@@ -106,7 +106,6 @@ export interface StrategyScores {
   weinstein_score: number;
   lynch_score?: number;
   technical_score: number;
-  fundamental_score: number;
   composite_score: number;
 }
 
@@ -180,8 +179,6 @@ export interface ScanResult {
   trend: string;
   weinstein_stage: number;
   patterns: string[];
-  volume: number;
-  avg_volume?: number;
   timestamp: string;
 }
 
@@ -199,67 +196,70 @@ export interface ScanFilter {
   max_composite_score?: number;
   signal?: SignalType;
   min_conviction?: ConvictionLevel;
-  min_volume_ratio?: number;
   trend?: TrendType;
   weinstein_stage?: number;
   max_results?: number;
-
-  // Fundamental filters
-  pe_min?: number;
-  pe_max?: number;
-  pb_max?: number;
-  roe_min?: number;
-  roce_min?: number;
-  debt_to_equity_max?: number;
-  eps_growth_min?: number;
-  revenue_growth_min?: number;
-  market_cap_min?: number;
 }
 
-export interface FundamentalData {
+// Multi-timeframe analysis types
+export type Timeframe = '1D' | '1W' | '1M';
+
+export type TimeframeAlignment = 'ALIGNED' | 'DIVERGENT' | 'MIXED';
+
+export interface TimeframeAnalysis {
+  timeframe: Timeframe;
+  analysis: AnalysisResult;
+}
+
+export interface MultiTimeframeAnalysis {
   symbol: string;
-  pe_ratio?: number;
-  pb_ratio?: number;
-  roe?: number;
-  roce?: number;
-  debt_to_equity?: number;
-  eps_growth?: number;
-  revenue_growth?: number;
-  updated_at?: string;
+  company_name?: string;
+  timestamp: string;
+  primary_timeframe: Timeframe;
+  timeframes: TimeframeAnalysis[];
+  alignment: TimeframeAlignment;
+  dominant_signal: SignalType;
+  dominant_conviction: ConvictionLevel;
+  aligned_trend_count: number;
+  total_timeframes: number;
+  bullish_timeframes: Timeframe[];
+  bearish_timeframes: Timeframe[];
+  neutral_timeframes: Timeframe[];
+  aggregated_warnings: string[];
+  aggregated_bullish_factors: string[];
+  aggregated_bearish_factors: string[];
 }
 
-export interface FundamentalScore {
-  score: number;
-  grade: string;
-  bullish_factors: string[];
-  bearish_factors: string[];
-  warnings: string[];
-  detail_scores: {
-    pe_score: number;        // Valuation (max 25)
-    growth_score: number;    // Growth (max 30)
-    roe_score: number;       // Profitability (max 25)
-    debt_score: number;      // Financial Health (max 20)
-  };
+export interface TimeframeSignal {
+  timeframe: Timeframe;
+  signal: SignalType;
+  conviction: ConvictionLevel;
+  trend: TrendType;
+  weinstein_stage: WeinsteinStage;
 }
 
-export interface ScannerPreset {
-  id: string;
-  name: string;
-  description: string;
-  strategy_rationale: string;
-  filter: ScanFilter;
-  recommended_universe: string;
-  holding_period: HoldingPeriod;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
+export interface MultiTimeframeConsensus {
+  symbol: string;
+  timestamp: string;
+  primary_signal: SignalType;
+  primary_conviction: ConvictionLevel;
+  timeframe_signals: TimeframeSignal[];
+  alignment: TimeframeAlignment;
+  consensus_strength: number;
+  notes: string[];
 }
 
-export interface ScanProgress {
-  scan_id: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'failed';
-  current: number;
-  total: number;
-  results_found: number;
-  started_at?: string;
-  completed_at?: string;
-  error?: string;
+export interface MultiTimeframeTradeSuggestion extends Omit<TradeSuggestion, 'strategy_source'> {
+  timeframe_analysis: TimeframeSignal[];
+  alignment: TimeframeAlignment;
+  consensus_strength: number;
+  multi_timeframe_notes: string[];
+  strategy_source: 'MULTI_TIMEFRAME_CONSENSUS';
+  optimal_entry_timeframe?: Timeframe;
+}
+
+export interface MultiTimeframeAnalysisRequest {
+  symbol: string;
+  primary_timeframe?: Timeframe;
+  include_timeframes?: Timeframe[];
 }

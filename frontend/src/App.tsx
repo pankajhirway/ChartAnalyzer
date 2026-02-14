@@ -1,8 +1,14 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom';
 import { Header } from './components/common/Header';
 import { Dashboard } from './components/Dashboard/Dashboard';
 import { StockAnalysis } from './components/Analysis/StockAnalysis';
 import { Scanner } from './components/Dashboard/Scanner';
+import { MultiTimeframeChart } from './components/Chart/MultiTimeframeChart';
+
+function MultiTimeframeChartPage() {
+  const { symbol } = useParams<{ symbol: string }>();
+  return <MultiTimeframeChart symbol={symbol!} />;
+}
 
 function App() {
   return (
@@ -13,6 +19,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/stock/:symbol" element={<StockAnalysis />} />
+            <Route path="/stock/:symbol/multi-timeframe" element={<MultiTimeframeChartPage />} />
             <Route path="/scanner" element={<Scanner />} />
           </Routes>
         </main>
